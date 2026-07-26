@@ -1,0 +1,63 @@
+// SRL Standard Library - Concurrency & Synchronization (std/sync.srl)
+
+fn mutex_create() {
+    var mutex_obj = map_new();
+    map_set(mutex_obj, "locked", false);
+    map_set(mutex_obj, "id", sys_pid());
+    return mutex_obj;
+}
+
+fn mutex_lock(mutex_obj) {
+    while map_get(mutex_obj, "locked") == true {
+        // Spinlock / wait
+    }
+    map_set(mutex_obj, "locked", true);
+}
+
+fn mutex_unlock(mutex_obj) {
+    map_set(mutex_obj, "locked", false);
+}
+
+fn channel_create() {
+    var channel_obj = map_new();
+    map_set(channel_obj, "queue", arr_new());
+    return channel_obj;
+}
+
+fn channel_send(channel_obj, val) {
+    var q = map_get(channel_obj, "queue");
+    arr_push(q, val);
+}
+
+fn channel_recv(channel_obj) {
+    var q = map_get(channel_obj, "queue");
+    if arr_len(q) == 0 {
+        return nil;
+    }
+    var first = arr_get(q, 0);
+    var new_q = arr_new();
+    var i = 1;
+    while i < arr_len(q) {
+        arr_push(new_q, arr_get(q, i));
+        i = i + 1;
+    }
+    map_set(channel_obj, "queue", new_q);
+    return first;
+}
+
+fn atomic_create(val) {
+    var atomic_obj = map_new();
+    map_set(atomic_obj, "value", val);
+    return atomic_obj;
+}
+
+fn atomic_add(atomic_obj, delta) {
+    var current = map_get(atomic_obj, "value");
+    var updated = current + delta;
+    map_set(atomic_obj, "value", updated);
+    return updated;
+}
+
+fn atomic_load(atomic_obj) {
+    return map_get(atomic_obj, "value");
+}

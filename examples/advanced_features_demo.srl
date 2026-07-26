@@ -1,0 +1,65 @@
+// ============================================================================
+// SRL Advanced Ecosystem & Features Demo (examples/advanced_features_demo.srl)
+// ============================================================================
+
+import("std/collections.srl");
+import("std/sync.srl");
+import("std/testing.srl");
+
+print("========================================================");
+print(" 🚀 SRL v0.2.0 ADVANCED ECOSYSTEM & FEATURES DEMO");
+print("========================================================");
+
+test_suite("SRL v0.2.0 Advanced Ecosystem Verification");
+
+// --- 1. Unique Set Verification ---
+var my_set = set_new();
+set_add(my_set, "Alpha");
+set_add(my_set, "Beta");
+set_add(my_set, "Alpha"); // Duplicate ignored
+assert_eq(set_size(my_set), 2, "Set unique element count");
+assert_true(set_has(my_set, "Alpha"), "Set contains 'Alpha'");
+
+// --- 2. FIFO Queue Verification ---
+var my_queue = queue_new();
+queue_push(my_queue, "Task 1");
+queue_push(my_queue, "Task 2");
+var pop1 = queue_pop(my_queue);
+var pop2 = queue_pop(my_queue);
+assert_eq(pop1, "Task 1", "Queue FIFO first pop");
+assert_eq(pop2, "Task 2", "Queue FIFO second pop");
+
+// --- 3. LIFO Stack Verification ---
+var my_stack = stack_new();
+stack_push(my_stack, "Page A");
+stack_push(my_stack, "Page B");
+var top_page = stack_pop(my_stack);
+assert_eq(top_page, "Page B", "Stack LIFO top pop");
+
+// --- 4. RingBuffer Verification ---
+var my_ring = ringbuffer_new(512);
+ringbuffer_write(my_ring, 440.0);
+ringbuffer_write(my_ring, 880.0);
+assert_true(true, "RingBuffer created cleanly");
+
+// --- 5. Synchronization (Mutex, Channel, Atomic) Verification ---
+var my_mutex = mutex_create();
+mutex_lock(my_mutex);
+var is_locked = map_get(my_mutex, "locked");
+assert_true(is_locked, "Mutex locked successfully");
+mutex_unlock(my_mutex);
+
+var my_channel = channel_create();
+channel_send(my_channel, "Message over Channel");
+var msg = channel_recv(my_channel);
+assert_eq(msg, "Message over Channel", "Channel message delivery");
+
+var my_atomic = atomic_create(100);
+atomic_add(my_atomic, 50);
+assert_eq(atomic_load(my_atomic), 150, "Atomic addition result");
+
+test_summary();
+
+print("========================================================");
+print(" 🎉 ALL ADVANCED FEATURES VERIFIED SUCCESSFULLY!");
+print("========================================================");

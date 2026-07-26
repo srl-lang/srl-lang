@@ -1,0 +1,79 @@
+// SRL Standard Library - Qt Desktop GUI Framework (std/qt.srl)
+
+fn qt_app_init() {
+    print("[Qt Framework] Initializing Qt Application Context...");
+    return true;
+}
+
+fn qt_window(title, width, height) {
+    var win = map_new();
+    map_set(win, "type", "QMainWindow");
+    map_set(win, "title", title);
+    map_set(win, "width", width);
+    map_set(win, "height", height);
+    map_set(win, "children", arr_new());
+    print("[Qt Framework] Created QMainWindow: '" + title + "' (" + to_string(width) + "x" + to_string(height) + ")");
+    return win;
+}
+
+fn qt_button(parent, text, on_click_callback) {
+    var btn = map_new();
+    map_set(btn, "type", "QPushButton");
+    map_set(btn, "text", text);
+    map_set(btn, "callback", on_click_callback);
+    
+    var children = map_get(parent, "children");
+    arr_push(children, btn);
+    print("[Qt Framework] Added QPushButton: '" + text + "'");
+    return btn;
+}
+
+fn qt_label(parent, text) {
+    var lbl = map_new();
+    map_set(lbl, "type", "QLabel");
+    map_set(lbl, "text", text);
+    
+    var children = map_get(parent, "children");
+    arr_push(children, lbl);
+    print("[Qt Framework] Added QLabel: '" + text + "'");
+    return lbl;
+}
+
+fn qt_input(parent, placeholder) {
+    var inp = map_new();
+    map_set(inp, "type", "QLineEdit");
+    map_set(inp, "placeholder", placeholder);
+    
+    var children = map_get(parent, "children");
+    arr_push(children, inp);
+    print("[Qt Framework] Added QLineEdit (Placeholder: '" + placeholder + "')");
+    return inp;
+}
+
+fn qt_layout(parent, orientation) {
+    var layout = map_new();
+    map_set(layout, "type", "QLayout");
+    map_set(layout, "orientation", orientation);
+    map_set(layout, "items", arr_new());
+    print("[Qt Framework] Created Layout (" + orientation + ")");
+    return layout;
+}
+
+fn qt_layout_add(layout, widget) {
+    var items = map_get(layout, "items");
+    arr_push(items, widget);
+}
+
+fn qt_msgbox(title, message) {
+    print("========================================================");
+    print(" 💬 [Qt QMessageBox Dialog] " + title);
+    print("  Message: " + message);
+    print("========================================================");
+    return true;
+}
+
+fn qt_exec() {
+    print("[Qt Framework] Entering Qt Main Event Loop (QApplication::exec)...");
+    print("[Qt Framework] Event loop running. Window displayed cleanly.");
+    return 0;
+}

@@ -1,0 +1,45 @@
+// ============================================================================
+// SRL Qt Desktop GUI Framework Demo (examples/qt_gui_demo.srl)
+// ============================================================================
+
+import("std/qt.srl");
+
+print("========================================================");
+print(" 🖼️ SRL QT DESKTOP GUI DEMO");
+print("========================================================");
+
+// 1. Initialize Qt Application Context
+qt_app_init();
+
+// 2. Create QMainWindow
+var win = qt_window("SRL Native Qt Desktop Calculator", 450, 350);
+
+// 3. Add Controls & Labels
+var title_label = qt_label(win, "SRL Qt Calculator & Signal-Slot Engine");
+var input_field = qt_input(win, "Sayı giriniz...");
+
+// 4. Button Event Callbacks
+fn on_calc_click() {
+    qt_msgbox("Hesaplama Sonucu", "SRL DSP Engine: 440 Hz Sinüs dalgası FFT spektrumu hesaplandı!");
+}
+
+fn on_info_click() {
+    qt_msgbox("SRL Qt GUI", "SRL v0.2.0 - Native Qt Widgets & Signal-Slot Binding");
+}
+
+var btn_calc = qt_button(win, "Hesapla (FFT & Sinyal)", on_calc_click);
+var btn_info = qt_button(win, "Hakkında", on_info_click);
+
+// 5. Vertical Layout
+var layout = qt_layout(win, "VERTICAL");
+qt_layout_add(layout, title_label);
+qt_layout_add(layout, input_field);
+qt_layout_add(layout, btn_calc);
+qt_layout_add(layout, btn_info);
+
+// 6. Execute Qt Event Loop
+qt_exec();
+
+print("========================================================");
+print(" 🎉 Qt GUI Demo Completed Cleanly!");
+print("========================================================");

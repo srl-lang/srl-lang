@@ -1,0 +1,113 @@
+// SRL Standard Library - Advanced Collections (std/collections.srl)
+
+// --- 1. Set (Unique Elements Collection) ---
+fn set_new() {
+    var set_obj = map_new();
+    map_set(set_obj, "data", map_new());
+    map_set(set_obj, "size", 0);
+    return set_obj;
+}
+
+fn set_add(set_obj, val) {
+    var data = map_get(set_obj, "data");
+    var key = to_string(val);
+    if map_get(data, key) == nil {
+        map_set(data, key, val);
+        var sz = map_get(set_obj, "size");
+        map_set(set_obj, "size", sz + 1);
+    }
+}
+
+fn set_has(set_obj, val) {
+    var data = map_get(set_obj, "data");
+    return map_get(data, to_string(val)) != nil;
+}
+
+fn set_size(set_obj) {
+    return map_get(set_obj, "size");
+}
+
+// --- 2. Queue (FIFO Data Structure) ---
+fn queue_new() {
+    var queue_obj = map_new();
+    map_set(queue_obj, "items", arr_new());
+    return queue_obj;
+}
+
+fn queue_push(queue_obj, val) {
+    var items = map_get(queue_obj, "items");
+    arr_push(items, val);
+}
+
+fn queue_pop(queue_obj) {
+    var items = map_get(queue_obj, "items");
+    if arr_len(items) == 0 {
+        return nil;
+    }
+    // Remove first element
+    var first = arr_get(items, 0);
+    // Rebuild array without first element
+    var new_items = arr_new();
+    var i = 1;
+    while i < arr_len(items) {
+        arr_push(new_items, arr_get(items, i));
+        i = i + 1;
+    }
+    map_set(queue_obj, "items", new_items);
+    return first;
+}
+
+fn queue_len(queue_obj) {
+    var items = map_get(queue_obj, "items");
+    return arr_len(items);
+}
+
+// --- 3. Stack (LIFO Data Structure) ---
+fn stack_new() {
+    var stack_obj = map_new();
+    map_set(stack_obj, "items", arr_new());
+    return stack_obj;
+}
+
+fn stack_push(stack_obj, val) {
+    var items = map_get(stack_obj, "items");
+    arr_push(items, val);
+}
+
+fn stack_pop(stack_obj) {
+    var items = map_get(stack_obj, "items");
+    var len = arr_len(items);
+    if len == 0 {
+        return nil;
+    }
+    var top = arr_get(items, len - 1);
+    var new_items = arr_new();
+    var i = 0;
+    while i < len - 1 {
+        arr_push(new_items, arr_get(items, i));
+        i = i + 1;
+    }
+    map_set(stack_obj, "items", new_items);
+    return top;
+}
+
+// --- 4. RingBuffer (Fixed Capacity Circular Buffer for Audio/DSP) ---
+fn ringbuffer_new(capacity) {
+    var ring_obj = map_new();
+    map_set(ring_obj, "capacity", capacity);
+    map_set(ring_obj, "items", arr_new());
+    map_set(ring_obj, "write_pos", 0);
+    return ring_obj;
+}
+
+fn ringbuffer_write(ring_obj, val) {
+    var items = map_get(ring_obj, "items");
+    var cap = map_get(ring_obj, "capacity");
+    if arr_len(items) < cap {
+        arr_push(items, val);
+    } else {
+        var pos = map_get(ring_obj, "write_pos");
+        arr_set(items, pos, val);
+        map_set(ring_obj, "write_pos", (pos + 1) % cap);
+    }
+}

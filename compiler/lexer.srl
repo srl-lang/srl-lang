@@ -144,6 +144,14 @@ fn lexer_tokenize(source) {
             else if ident == "return" { type_name = "RETURN"; }
             else if ident == "struct" { type_name = "STRUCT"; }
             else if ident == "import" { type_name = "IMPORT"; }
+            else if ident == "try" { type_name = "TRY"; }
+            else if ident == "catch" { type_name = "CATCH"; }
+            else if ident == "throw" { type_name = "THROW"; }
+            else if ident == "const" { type_name = "CONST"; }
+            else if ident == "enum" { type_name = "ENUM"; }
+            else if ident == "async" { type_name = "ASYNC"; }
+            else if ident == "await" { type_name = "AWAIT"; }
+            else if ident == "export" { type_name = "EXPORT"; }
             else if ident == "true" { type_name = "TRUE"; }
             else if ident == "false" { type_name = "FALSE"; }
             else if ident == "nil" { type_name = "NIL"; }
