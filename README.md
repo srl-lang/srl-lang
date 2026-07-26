@@ -2,13 +2,14 @@
 
 **SRL (Serial Run Language)** is a high-performance, lightweight hybrid programming language designed for **Digital Signal Processing (DSP)**, **Real-Time Audio Analysis (FFT)**, **Live Hot-Reloading**, and **Standalone Native Code Generation**.
 
-Featuring a C/Lua hybrid syntax, a fast C++ Bytecode VM, and its own standalone LLVM IR / Native Compiler (`srlc`), SRL combines developer agility with low-level execution speed.
+Featuring a C/Lua hybrid syntax, a fast C++ Bytecode VM, and a unified CLI toolchain (`srl run`, `srl build`, `srl watch`), SRL combines developer agility with low-level execution speed.
 
 ---
 
 ## ✨ Key Features
 
-- **⚡ Live Code Hot-Reloading with State Retention:** Modify `.srl` scripts on-the-fly while preserving runtime variable states. Perfect for live audio synthesis, game loops, and real-time monitoring.
+- **⚡ Unified CLI Toolchain:** Run scripts, build standalone executables, or launch live hot-reloaders with simple commands (`srl run`, `srl build`, `srl watch`).
+- **🔥 Live Code Hot-Reloading with State Retention:** Modify `.srl` scripts on-the-fly while preserving runtime variable states. Perfect for live audio synthesis, game loops, and real-time monitoring.
 - **🎵 Built-in DSP & FFT Engine:** Native Fourier Transforms (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), low-pass IIR filtering, and ASCII waveform terminal plotting (`dsp_plot`).
 - **🧩 C++ Structs & Lua Metatables:** Combine C++ style struct definitions (`struct Vector2 { x, y }`) with Lua-style prototype inheritance and metamethods (`setmetatable`, `__index`, `__add`).
 - **⚡ Standalone LLVM IR Compiler (`srlc`):** Compile `.srl` source code directly to LLVM IR (`.ll`) and standalone native x86_64 executable binaries without VM overhead.
@@ -17,7 +18,29 @@ Featuring a C/Lua hybrid syntax, a fast C++ Bytecode VM, and its own standalone 
 
 ---
 
-## 🚀 Quickstart Examples
+## 🛠️ CLI Usage Guide
+
+### 1. Run a Script (Interpreter Mode)
+
+```bash
+srl run examples/dsp_demo.srl
+```
+
+### 2. Live Hot-Reloading Mode (Watch Mode)
+
+```bash
+srl watch examples/live_demo.srl
+```
+
+### 3. Build a Standalone Native Executable (Compiler Mode)
+
+```bash
+srl build examples/dsp_demo.srl -o dsp_demo.exe
+```
+
+---
+
+## 🚀 Quickstart Code Examples
 
 ### 1. Audio Signal Generation & Fast Fourier Transform (FFT)
 
@@ -58,42 +81,6 @@ print("Inherited Prototype Tag: " + to_string(map_get(p1, "tag")));
 
 ---
 
-## 🛠️ Building & Running SRL
-
-### 1. Build the SRL Engine (Interpreter & VM)
-
-```bash
-git clone https://github.com/your-username/srl-lang.git
-cd srl-lang
-cmake -B build -S .
-cmake --build build --config Release
-```
-
-Run an example script:
-```bash
-./build/Release/srl examples/dsp_demo.srl
-```
-
-### 2. Build the Standalone Native Compiler (`srlc`)
-
-```bash
-cd srlc
-cmake -B build -S .
-cmake --build build --config Release
-```
-
-Compile an SRL script directly into LLVM IR & Standalone Executable:
-```bash
-./srlc/build/Release/srlc examples/dsp_demo.srl -o dsp_demo.exe
-```
-
-Generate LLVM IR assembly:
-```bash
-./srlc/build/Release/srlc examples/dsp_demo.srl --emit-llvm
-```
-
----
-
 ## 📦 VS Code Extension
 
 Install the SRL language support extension located in `srl-vscode-extension`:
@@ -105,4 +92,4 @@ Install the SRL language support extension located in `srl-vscode-extension`:
 
 ## 📜 License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for more information.
