@@ -9,3 +9,9 @@ include_directories(include)
 file(GLOB SOURCES "src/*.cpp")
 
 add_executable(srl ${SOURCES})
+
+if(WIN32)
+    target_link_libraries(srl winmm comdlg32 ws2_32 gdi32 user32 psapi)
+endif()
+
+

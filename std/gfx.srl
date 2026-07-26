@@ -1,0 +1,21 @@
+// SRL Standard Library - 2D Graphics Engine Helper (std/gfx.srl)
+
+fn gfx_app_create(title, width, height) {
+    var app = map_new();
+    map_set(app, "title", title);
+    map_set(app, "width", width);
+    map_set(app, "height", height);
+
+    var success = gfx_window_create(title, width, height);
+    map_set(app, "is_open", success);
+    return app;
+}
+
+fn gfx_app_clear(color_name) {
+    gfx_clear(color_name);
+}
+
+fn gfx_app_render_frame() {
+    gfx_present();
+    gfx_poll_events();
+}

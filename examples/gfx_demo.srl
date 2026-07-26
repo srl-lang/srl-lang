@@ -1,0 +1,62 @@
+// SRL Language - 2D Native Graphics Window Demo (examples/gfx_demo.srl)
+import("std/gfx.srl");
+
+print("=================================================");
+print("      SRL YEREL 2D GRAFIK PENCERESI DEMOSU      ");
+print("=================================================");
+
+var app = gfx_app_create("SRL Native 2D Graphics Engine", 800, 600);
+print("Grafik Penceresi Olusturuldu!");
+
+var frame = 0;
+while gfx_is_open() {
+    gfx_clear("darkgray");
+
+    // Arka plan kutusu
+    gfx_fill_rect(50, 50, 700, 500, "black");
+
+    // Baslik metni
+    gfx_draw_text(70, 70, "SRL (Serial Run Language) Native 2D Graphics Window", "cyan");
+
+    // Animasyonlu Hareket Eden Daireler
+    var x1 = 200 + math_floor(math_sin(frame * 0.05) * 100);
+    var y1 = 300 + math_floor(math_cos(frame * 0.05) * 50);
+
+    var x2 = 500 + math_floor(math_cos(frame * 0.03) * 120);
+    var y2 = 300 + math_floor(math_sin(frame * 0.03) * 70);
+
+    gfx_fill_circle(x1, y1, 40, "yellow");
+    gfx_draw_circle(x1, y1, 45, "white");
+
+    gfx_fill_circle(x2, y2, 50, "magenta");
+    gfx_draw_circle(x2, y2, 55, "cyan");
+
+    // Baglanti çizgisi
+    gfx_draw_line(x1, y1, x2, y2, "green");
+
+    // Renkli Dikdortgenler
+    gfx_fill_rect(100, 450, 150, 60, "red");
+    gfx_draw_text(110, 470, "RED RECT", "white");
+
+    gfx_fill_rect(320, 450, 150, 60, "blue");
+    gfx_draw_text(330, 470, "BLUE RECT", "white");
+
+    gfx_fill_rect(540, 450, 150, 60, "orange");
+    gfx_draw_text(550, 470, "ORANGE RECT", "black");
+
+    // Cerceve Bilgisi
+    gfx_draw_text(70, 100, "Kare Sayisi (Frame): " + to_string(frame), "green");
+
+    gfx_present();
+    gfx_poll_events();
+
+    sleep_ms(16); // ~60 FPS
+    frame = frame + 1;
+
+    // 300 kare sonra otomatik kapat (Demo icin)
+    if frame > 300 {
+        gfx_close();
+    }
+}
+
+print("Grafik Penceresi Kapatildi.");

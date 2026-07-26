@@ -1,0 +1,18 @@
+// SRL Language - Network & HTTP Client Demo (examples/net_demo.srl)
+import("std/net.srl");
+
+print("=================================================");
+print("      SRL AG (NET) & HTTP ISTEMCI DEMOSU        ");
+print("=================================================");
+
+print("\n[1] HTTP GET Istegi Gonderiliyor (httpbin.org/ip)...");
+var resp = net_http_get("httpbin.org", "/ip");
+
+if str_len(resp) > 0 {
+    print("[Basarili] HTTP Yaniti Alindi:\n");
+    print(str_sub(resp, 0, 300));
+} else {
+    print("[Bilgi] HTTP Yaniti alinamadi veya sunucu baglantisi kapali.");
+}
+
+print("\n=== AG TESTI TAMAMLANDI ===");

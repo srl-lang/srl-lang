@@ -1,0 +1,66 @@
+// SRL Standard Library - Audio Player & Playlist Module (std/audio.srl)
+
+fn audio_player_new() {
+    var player = map_new();
+    map_set(player, "playlist", arr_new());
+    map_set(player, "current_index", 0);
+    map_set(player, "volume", 80);
+    map_set(player, "is_looping", false);
+
+    // Initial volume setting
+    audio_set_volume(80);
+
+    return player;
+}
+
+fn audio_player_add_track(player, filepath) {
+    if file_exists(filepath) {
+        var list = map_get(player, "playlist");
+        arr_push(list, filepath);
+        return true;
+    }
+    return false;
+}
+
+fn audio_player_play_current(player) {
+    var list = map_get(player, "playlist");
+    var idx = map_get(player, "current_index");
+    if idx < arr_len(list) {
+        var track = arr_get(list, idx);
+        audio_play(track);
+        return true;
+    }
+    return false;
+}
+
+fn audio_player_next(player) {
+    var list = map_get(player, "playlist");
+    var len = arr_len(list);
+    if len == 0 { return false; }
+
+    var idx = map_get(player, "current_index") + 1;
+    if idx >= len {
+        idx = 0;
+    }
+    map_set(player, "current_index", idx);
+    return audio_player_play_current(player);
+}
+
+fn audio_player_prev(player) {
+    var list = map_get(player, "playlist");
+    var len = arr_len(list);
+    if len == 0 { return false; }
+
+    var idx = map_get(player, "current_index") - 1;
+    if idx < 0 {
+        idx = len - 1;
+    }
+    map_set(player, "current_index", idx);
+    return audio_player_play_current(player);
+}
+
+fn audio_player_set_volume(player, vol) {
+    var v = math_clamp(vol, 0, 100);
+    map_set(player, "volume", v);
+    audio_set_volume(v);
+}

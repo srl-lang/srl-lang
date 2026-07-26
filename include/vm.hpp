@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 namespace srl {
 
@@ -27,6 +28,7 @@ public:
     VM();
     
     InterpretResult interpret(const std::string& source);
+    InterpretResult interpretFile(const std::string& filepath);
     InterpretResult runFunction(const std::string& fnName);
 
     void defineNative(const std::string& name, NativeFn fn);
@@ -36,6 +38,7 @@ private:
     Environment env_;
     std::vector<Value> stack_;
     std::vector<CallFrame> frames_;
+    std::unordered_set<std::string> loadedModules_;
 
     void push(Value value);
     Value pop();
@@ -49,3 +52,4 @@ private:
 } // namespace srl
 
 #endif // SRL_VM_HPP
+

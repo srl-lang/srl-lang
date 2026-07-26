@@ -15,9 +15,10 @@ bin/
 *.pdb
 *.ll
 
-# Temporary generated files
+# Temporary generated & database files
 temp_generated.cpp
 *.log
+*.srl_db
 
 # VS Code & IDE temp files
 .vscode/

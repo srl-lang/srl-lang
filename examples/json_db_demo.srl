@@ -1,0 +1,41 @@
+// SRL Language - JSON, Database & Cryptography Demo (examples/json_db_demo.srl)
+
+print("=================================================");
+print("     SRL JSON, VERITABANI & KRIPTOGRAFI DEMOSU   ");
+print("=================================================");
+
+// 1. JSON Parsing & Stringifying
+print("\n--- 1. JSON Motoru (`json_*`) ---");
+var raw_json = "{\"oyuncu\": \"Ahmet\", \"skor\": 2500, \"aktif\": true, \"dizi\": [10, 20, 30]}";
+print("Ham JSON Metni: " + raw_json);
+
+var parsed = json_parse(raw_json);
+print("Ayrıştırılan Oyuncu: " + map_get(parsed, "oyuncu"));
+print("Ayrıştırılan Skor: " + to_string(map_get(parsed, "skor")));
+
+var new_json = json_stringify(parsed);
+print("Tekrar Üretilen JSON Metni: " + new_json);
+
+// 2. Local File Key-Value Database
+print("\n--- 2. Yerel Veritabanı Motoru (`db_*`) ---");
+var db = db_open("user_settings.srl_db");
+db_set(db, "tema", "karanlik");
+db_set(db, "ses_seviyesi", "95");
+db_set(db, "son_oturum", "2026-07-26");
+
+print("DB'den Okunan Tema: " + db_get(db, "tema"));
+print("DB'den Okunan Ses: %" + db_get(db, "ses_seviyesi"));
+db_close(db);
+print("Veritabanı Başarıyla Kaydedildi ve Kapatıldı.");
+
+// 3. Cryptography & Hashing
+print("\n--- 3. Kriptografi & Hash (`crypto_*`) ---");
+var metin = "SRL Programlama Dili 2026";
+var b64_enc = crypto_base64_encode(metin);
+print("Original: " + metin);
+print("Base64 Encode: " + b64_enc);
+print("Base64 Decode: " + crypto_base64_decode(b64_enc));
+print("SHA-256 Hash: " + crypto_sha256(metin));
+print("MD5 Hash: " + crypto_md5(metin));
+
+print("\n=== TÜM ÖNEMLİ KÜTÜPHANELER BAŞARIYLA ÇALIŞTI ===");

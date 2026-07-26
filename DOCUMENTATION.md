@@ -281,4 +281,123 @@ Sisteminizde `srl` komutunu kullanarak tüm işlemleri tek bir noktadan yöneteb
 
 ---
 
-*SRL (Serial Run Language) v0.1.0 - GNU General Public License v3.0*
+## 13. Genişletilmiş Standart Kütüphaneler (Standard Libraries & Audio Engine)
+
+SRL v0.2.0 ile gelişmiş ses motoru (Audio Engine), masaüstü diyalogları (GUI Dialogs), dosya ve dizin tarama (`dir_*`), matematik, metin işleme ve modüler `import` yetenekleri eklenmiştir:
+
+### A. Yerleşik Ses Motoru (`audio_*`)
+Windows MCI altyapısı sayesinde ek bağımlılık olmadan MP3, WAV ve MID dosyalarını oynatır:
+
+| Fonksiyon | Açıklama |
+| :--- | :--- |
+| `audio_play(filepath)` | Belirtilen MP3/WAV dosyasını oynatır. |
+| `audio_pause()` | Oynatmayı duraklatır. |
+| `audio_resume()` | Duraklatılan parçayı devam ettirir. |
+| `audio_stop()` | Parçayı durdurur ve dosyayı kapatır. |
+| `audio_set_volume(0..100)` | Ses yüksekliğini ayarlar. |
+| `audio_get_position()` | Oynatılan parçanın anlık saniyesini döner. |
+| `audio_get_length()` | Parçanın toplam uzunluğunu (saniye) döner. |
+| `audio_seek(seconds)` | Parçada belirli saniyeye atlar. |
+| `audio_is_playing()` | Parçanın çalma durumunu döner (`true`/`false`). |
+| `audio_beep(freq, duration_ms)` | Donanımsal sinyal/bip sesi üretir. |
+
+### B. Masaüstü Arayüz Diyalogları (`gui_*`)
+| Fonksiyon | Açıklama |
+| :--- | :--- |
+| `gui_file_dialog_open(title, filter)` | Masaüstü yerel dosya seçim penceresini açar (Seçilen dosya yolunu döner). |
+| `gui_file_dialog_save(title, filter)` | Kaydetme dosyası diyalog penceresini açar. |
+| `gui_msgbox(title, message, type)` | Yerel Win32 diyalog kutusu çıkarır (`info`, `warning`, `error`, `question`). |
+
+### C. Dizin & Dosya Sistemi (`dir_*` & `file_*`)
+| Fonksiyon | Açıklama |
+| :--- | :--- |
+| `dir_list(path)` | Dizin içindeki tüm dosya/klasör isimlerini SRL dizisi (`Array`) olarak döner. |
+| `dir_list_ext(path, extension)` | Sadece belirli uzantıdaki (örn: `.mp3`) dosyaları listeler. |
+| `dir_exists(path)` / `dir_create(path)` | Dizin varlığını kontrol eder / Yeni dizin oluşturur. |
+| `file_append(path, content)` | Var olan dosyanın sonuna metin ekler. |
+| `file_remove(path)` / `file_size(path)` | Dosyayı siler / Dosya boyutunu (bayt) döner. |
+| `file_copy(src, dst)` | Dosyayı kopyalar. |
+
+### D. Matematik & String Kütüphanesi (`math_*` & `str_*`)
+- **Matematik:** `math_sin`, `math_cos`, `math_tan`, `math_sqrt`, `math_pow`, `math_exp`, `math_log`, `math_floor`, `math_ceil`, `math_round`, `math_min`, `math_max`, `math_clamp`, `math_random()`, `math_random_range(min, max)`, `math_pi()`.
+- **Metin İşleme:** `str_upper`, `str_lower`, `str_trim`, `str_find`, `str_replace`, `str_split(str, delim)`, `str_contains`, `str_starts_with`, `str_ends_with`.
+
+### E. Modüler Kod Yükleme (`import`)
+```srl
+import("std/audio.srl");
+import("std/ui.srl");
+
+var player = audio_player_new();
+```
+
+---
+
+## 14. C++ Sistem Düzeyi Yetenekler (FFI, GFX, NET, SYS, Threads)
+
+SRL diline C++ dilinin sunduğu tam donanımlı sistem seviyesi yetenekler kazandırılmıştır:
+
+### A. Dış Kütüphane Çağırma (C/C++ FFI - `ffi_*`)
+SRL içerisinden herhangi bir dış Win32 / C/C++ `.dll` dosyası dinamik olarak yüklenebilir ve fonksiyonları çağrılabilir:
+- `ffi_load(dll_path)` -> DLL kütüphanesini belleğe yükler (Handle ID döner).
+- `ffi_free(handle)` -> Yüklenen kütüphaneyi serbest bırakır.
+- `ffi_call(handle, symbol_name, return_type, args)` -> Kütüphanedeki C fonksiyonunu çalıştırır.
+
+### B. Yerel 2D Grafik Motoru (`gfx_*`)
+Win32 GDI ve çift arabellekleme (double buffering) ile SRL dilinde masaüstü grafik penceresi ve 2D oyunlar/çizimler yapılabilir:
+- `gfx_window_create(title, width, height)` -> Yerel 2D çizim penceresi oluşturur.
+- `gfx_clear(color_name)` -> Pencereyi temizler (`black`, `darkgray`, `white`, `red`, `green`, `blue`, vb.).
+- `gfx_draw_line(x1, y1, x2, y2, color)`, `gfx_draw_rect(...)`, `gfx_fill_rect(...)`.
+- `gfx_draw_circle(cx, cy, r, color)`, `gfx_fill_circle(...)`, `gfx_draw_text(x, y, text, color)`.
+- `gfx_present()` -> Çift arabelleği (double buffer) ekrana yansıtır (60 FPS animasyonlar için).
+- `gfx_is_open()`, `gfx_poll_events()`, `gfx_close()`.
+
+### C. Ağ & Soket Motoru (`net_*`)
+Winsock2 altyapısı ile HTTP istekleri ve TCP iletişimi:
+- `net_http_get(url_host, path)` -> HTTP GET isteği gönderir ve yanıt metnini döner.
+- `net_tcp_connect(host, port)` -> TCP istemci soketi açar.
+- `net_tcp_send(sock_id, data)` / `net_tcp_recv(sock_id, max_bytes)` -> Veri gönderir / alır.
+- `net_tcp_close(sock_id)` -> Soketi kapatır.
+
+### D. Sistem & Süreç Yönetimi (`sys_*`)
+- `sys_exec(command)` -> Sistem kabuk komutunu çalıştırır ve stdout çıktısını string olarak döner.
+- `sys_cpu_count()` -> İşlemcinin çekirdek sayısını döner.
+- `sys_memory_usage()` -> Uygulamanın RAM bellek kullanımını (bayt) döner.
+- `sys_pid()` -> Süreç ID'sini döner.
+- `sys_env_get(name)` / `sys_env_set(name, value)` -> Ortam değişkenlerini okur/yazar.
+
+### E. Çoklu İş Parçacığı (`thread_*`)
+- `thread_create(fn_name)` -> SRL fonksiyonunu arka planda asenkron `std::thread` olarak çalıştırır.
+- `thread_join(thread_id)` -> Arka plan iş parçacığının bitmesini bekler.
+
+---
+
+## 15. Temel Kütüphaneler (JSON, Veritabanı, Kriptografi & GUI Widgets)
+
+SRL v0.3.0 ile yazılımlar için elzem olan JSON, Veritabanı, Kriptografi ve Masaüstü GUI Widget kütüphaneleri eklenmiştir:
+
+### A. JSON Motoru (`json_*`)
+- `json_parse(json_str)` -> JSON formatındaki metinleri SRL Map/Array yapısına dönüştürür.
+- `json_stringify(value)` -> SRL değişken ve harita yapılarını biçimlendirilmiş JSON metnine dönüştürür.
+
+### B. Kalıcı Yerel Veritabanı (`db_*`)
+- `db_open(filepath)` -> Dosya tabanlı anahtar-değer veritabanını açar/oluşturur.
+- `db_set(db_handle, key, value)` -> Anahtar-değer saklar ve dosyaya yazar.
+- `db_get(db_handle, key)` -> Anahtarın değerini okur.
+- `db_has(db_handle, key)` / `db_delete(db_handle, key)` -> Anahtar varlığı kontrolü / silme.
+- `db_close(db_handle)` -> Veritabanını kaydeder ve kapatır.
+
+### C. Kriptografi & Güvenlik (`crypto_*`)
+- `crypto_sha256(str)` -> SHA-256 özet hash değerini döner.
+- `crypto_md5(str)` -> MD5 özet hash değerini döner.
+- `crypto_base64_encode(str)` / `crypto_base64_decode(str)` -> Base64 kodlar ve çözer.
+
+### D. Masaüstü GUI Widget Araç Takımı (`std/widget.srl`)
+- `widget_button_create(x, y, w, h, text, color)` / `widget_button_render(btn)` -> Tıklanabilir buton bileşenleri.
+- `widget_slider_create(x, y, w, min, max, val)` / `widget_slider_render(slider)` -> Ses ve değer ayar slider'ları.
+
+---
+
+*SRL (Serial Run Language) v0.3.0 - GNU General Public License v3.0*
+
+
+

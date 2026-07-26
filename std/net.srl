@@ -1,0 +1,16 @@
+// SRL Standard Library - Network & HTTP Client Helper (std/net.srl)
+
+fn http_get(url) {
+    return net_http_get(url, "/");
+}
+
+fn tcp_connect_and_send(host, port, data) {
+    var sock = net_tcp_connect(host, port);
+    if sock > 0 {
+        net_tcp_send(sock, data);
+        var resp = net_tcp_recv(sock, 4096);
+        net_tcp_close(sock);
+        return resp;
+    }
+    return "";
+}

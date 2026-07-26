@@ -1,0 +1,48 @@
+// Test script for SRL expanded standard library features
+
+print("=== SRL Standart Kutuphane Testi ===");
+
+// 1. Math Library Test
+print("\n--- 1. Matematik Testi ---");
+var pi = math_pi();
+print("PI Değeri: " + to_string(pi));
+print("Sin(PI/2): " + to_string(math_sin(pi / 2)));
+print("Sqrt(144): " + to_string(math_sqrt(144)));
+print("Pow(2, 8): " + to_string(math_pow(2, 8)));
+print("Clamp(150, 0, 100): " + to_string(math_clamp(150, 0, 100)));
+print("Rastgele Sayi: " + to_string(math_random_range(10, 50)));
+
+// 2. String Library Test
+print("\n--- 2. Metin (String) Testi ---");
+var metin = "  SRL Programlama Dili Kutuphaneleri  ";
+print("Original: [" + metin + "]");
+print("Trimmed: [" + str_trim(metin) + "]");
+print("Upper: " + str_upper(str_trim(metin)));
+print("Contains 'Dili': " + to_string(str_contains(metin, "Dili")));
+var kelimeler = str_split(str_trim(metin), " ");
+print("Kelime Sayisi: " + to_string(arr_len(kelimeler)));
+
+// 3. File & Directory Test
+print("\n--- 3. Dosya ve Dizin Testi ---");
+file_write("temp_test.txt", "SRL Kutuphane Test Verisi\n");
+file_append("temp_test.txt", "Satir 2 Eklendi.\n");
+print("Dosya Var mi: " + to_string(file_exists("temp_test.txt")));
+print("Dosya Boyutu: " + to_string(file_size("temp_test.txt")) + " bayt");
+print("Okunan Icerik:\n" + file_read("temp_test.txt"));
+file_remove("temp_test.txt");
+
+// 4. Import Test
+print("\n--- 4. Import Modul Testi ---");
+var audio_std_var = import("std/audio.srl");
+print("std/audio.srl Import Edildi mi: " + to_string(audio_std_var));
+
+var player = audio_player_new();
+print("Audio Player Olusturuldu. Ses: %" + to_string(map_get(player, "volume")));
+
+// 5. Audio Beep Synthesizer Test
+print("\n--- 5. Ses Sentezleme (Tone Beep) Testi ---");
+print("Bip Sesi Caliniyor...");
+audio_beep(440, 150); // 440 Hz (A4 note)
+audio_beep(880, 150); // 880 Hz (A5 note)
+
+print("\n=== TUM STANDART KUTUPHANE TESTLERI BASARIYLA TAMAMLANDI ===");

@@ -1,0 +1,29 @@
+// SRL Standard Library - UI Components (std/ui.srl)
+
+fn ui_draw_header(title) {
+    tui_color("cyan");
+    tui_box(1, 1, 78, 3, title);
+    tui_reset();
+}
+
+fn ui_draw_status(row, track_name, current_time, total_time, volume) {
+    tui_move(row, 3);
+    tui_color("yellow");
+    print("Su an Calan: " + track_name);
+    
+    var time_str = to_string(math_floor(current_time)) + "s / " + to_string(math_floor(total_time)) + "s";
+    tui_move(row + 1, 3);
+    tui_color("white");
+    print("Sure: " + time_str + " | Ses: %" + to_string(volume));
+    tui_reset();
+}
+
+fn ui_format_time(sec) {
+    var mins = math_floor(sec / 60);
+    var secs = math_floor(sec - (mins * 60));
+    var sec_str = to_string(secs);
+    if secs < 10 {
+        sec_str = "0" + sec_str;
+    }
+    return to_string(mins) + ":" + sec_str;
+}

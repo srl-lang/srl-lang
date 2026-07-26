@@ -1,0 +1,44 @@
+// SRL Language - Desktop GUI Widgets Demo (examples/gui_widgets_demo.srl)
+import("std/widget.srl");
+
+print("=================================================");
+print("     SRL MASAUSTU GUI WIDGET ARAÇ TAKIMI DEMOSU   ");
+print("=================================================");
+
+var app = gfx_app_create("SRL Native Desktop GUI Widgets", 800, 600);
+
+var btn1 = widget_button_create(100, 100, 200, 40, "OYNA (PLAY)", "blue");
+var btn2 = widget_button_create(100, 160, 200, 40, "DURAKLAT (PAUSE)", "orange");
+var slider = widget_slider_create(100, 240, 300, 0, 100, 75);
+
+var frame = 0;
+while gfx_is_open() {
+    gfx_clear("darkgray");
+
+    // Ana Arka Plan Kartı
+    gfx_fill_rect(50, 50, 700, 500, "black");
+    gfx_draw_text(80, 70, "SRL Interactive Desktop GUI Widget Framework", "cyan");
+
+    // Widget Render
+    widget_button_render(btn1);
+    widget_button_render(btn2);
+    widget_slider_render(slider);
+
+    // Animasyonlu Slider Değeri
+    var current_val = 50 + math_floor(math_sin(frame * 0.05) * 45);
+    map_set(slider, "val", current_val);
+
+    gfx_draw_text(100, 300, "Canli Ayarlanan Deger: %" + to_string(current_val), "green");
+
+    gfx_present();
+    gfx_poll_events();
+
+    sleep_ms(16);
+    frame = frame + 1;
+
+    if frame > 250 {
+        gfx_close();
+    }
+}
+
+print("GUI Widget Uygulamasi Kapatildi.");

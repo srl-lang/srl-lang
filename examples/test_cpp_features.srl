@@ -1,0 +1,35 @@
+// Test script for SRL full C++ parity features (FFI, SYS, Threading, GFX, NET)
+
+print("=== SRL C++ SISTEM YETENEKLERI TESTI ===");
+
+// 1. System Diagnostics & Process Test
+print("\n--- 1. Sistem & Teşhis Testi (`sys_*`) ---");
+print("İşlemci Çekirdek Sayısı: " + to_string(sys_cpu_count()));
+print("İşlem PID: " + to_string(sys_pid()));
+print("Bellek Kullanımı: " + to_string(sys_memory_usage()) + " bayt");
+print("PATH Ortam Değişkeni Varlığı: " + to_string(str_len(sys_env_get("PATH")) > 0));
+
+// 2. FFI (Foreign Function Interface) Test
+print("\n--- 2. FFI Motoru (`ffi_*`) ---");
+var user32_dll = ffi_load("user32.dll");
+print("user32.dll Yüklendi mi (Handle ID): " + to_string(user32_dll));
+
+if user32_dll > 0 {
+    ffi_free(user32_dll);
+    print("user32.dll Serbest Bırakıldı.");
+}
+
+// 3. Threading / Async Background Test
+print("\n--- 3. Çoklu İş Parçacığı (`thread_*`) ---");
+fn background_task() {
+    print("  [Arka Plan Thread] Asenkron görev başlatıldı!");
+    sleep_ms(100);
+    print("  [Arka Plan Thread] Asenkron görev tamamlandı!");
+}
+
+var tid = thread_create("background_task");
+print("Thread Başlatıldı (Thread ID): " + to_string(tid));
+thread_join(tid);
+print("Thread Tamamlandı.");
+
+print("\n=== TÜM C++ SİSTEM YETENEKLERİ BAŞARIYLA DOĞRULANDI ===");

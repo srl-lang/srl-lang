@@ -1,9 +1,25 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include "vm.hpp"
+
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "compiler.hpp"
 #include "tui.hpp"
 #include "dsp.hpp"
+#include "srl_audio.hpp"
+#include "srl_gui.hpp"
+#include "srl_ffi.hpp"
+#include "srl_gfx.hpp"
+#include "srl_net.hpp"
+#include "srl_sys.hpp"
+#include "srl_thread.hpp"
+#include "srl_json.hpp"
+#include "srl_db.hpp"
+#include "srl_crypto.hpp"
+
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -11,6 +27,8 @@
 #include <chrono>
 #include <thread>
 #include <cmath>
+#include <algorithm>
+#include <random>
 
 namespace srl {
 
@@ -35,6 +53,18 @@ VM::VM() {
 
 void VM::registerNativeFunctions() {
     DSP::registerNativeFunctions(*this);
+    Audio::registerNativeFunctions(*this);
+    GUI::registerNativeFunctions(*this);
+    FFI::registerNativeFunctions(*this);
+    GFX::registerNativeFunctions(*this);
+    NET::registerNativeFunctions(*this);
+    SYS::registerNativeFunctions(*this);
+    THREAD::registerNativeFunctions(*this);
+    JSON::registerNativeFunctions(*this);
+    DB::registerNativeFunctions(*this);
+    CRYPTO::registerNativeFunctions(*this);
+
+
 
     // print(...)
     defineNative("print", [](int argCount, const Value* args) -> Value {
@@ -70,12 +100,133 @@ void VM::registerNativeFunctions() {
         return Value(seconds);
     });
 
-    // math_abs(val)
+    // --- Math Library Operations ---
     defineNative("math_abs", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {
             return Value(std::abs(args[0].asNumber()));
         }
         return Value(0.0);
+    });
+
+    defineNative("math_sin", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::sin(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_cos", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::cos(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_tan", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::tan(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_asin", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::asin(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_acos", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::acos(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_atan", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::atan(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_atan2", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isNumber() && args[1].isNumber()) return Value(std::atan2(args[0].asNumber(), args[1].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_sqrt", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::sqrt(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_pow", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isNumber() && args[1].isNumber()) return Value(std::pow(args[0].asNumber(), args[1].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_exp", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::exp(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_log", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::log(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_log10", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::log10(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_floor", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::floor(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_ceil", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::ceil(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_round", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) return Value(std::round(args[0].asNumber()));
+        return Value(0.0);
+    });
+
+    defineNative("math_min", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isNumber() && args[1].isNumber()) {
+            return Value((std::min)(args[0].asNumber(), args[1].asNumber()));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("math_max", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isNumber() && args[1].isNumber()) {
+            return Value((std::max)(args[0].asNumber(), args[1].asNumber()));
+        }
+        return Value(0.0);
+    });
+
+
+    defineNative("math_clamp", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 3 && args[0].isNumber() && args[1].isNumber() && args[2].isNumber()) {
+            double v = args[0].asNumber();
+            double lo = args[1].asNumber();
+            double hi = args[2].asNumber();
+            return Value(std::clamp(v, lo, hi));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("math_random", [](int argCount, const Value* args) -> Value {
+        static std::mt19937 rng(std::random_device{}());
+        static std::uniform_real_distribution<double> dist(0.0, 1.0);
+        return Value(dist(rng));
+    });
+
+    defineNative("math_random_range", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isNumber() && args[1].isNumber()) {
+            double minV = args[0].asNumber();
+            double maxV = args[1].asNumber();
+            static std::mt19937 rng(std::random_device{}());
+            std::uniform_real_distribution<double> dist(minV, maxV);
+            return Value(dist(rng));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("math_pi", [](int argCount, const Value* args) -> Value {
+        return Value(3.14159265358979323846);
     });
 
     // --- TUI (Text User Interface) Operations ---
@@ -365,7 +516,110 @@ void VM::registerNativeFunctions() {
         return Value("");
     });
 
-    // --- File I/O Operations ---
+    defineNative("str_upper", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::string s = args[0].asString();
+            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+            return Value(s);
+        }
+        return Value("");
+    });
+
+    defineNative("str_lower", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::string s = args[0].asString();
+            std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+            return Value(s);
+        }
+        return Value("");
+    });
+
+    defineNative("str_find", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            const std::string& str = args[0].asString();
+            const std::string& target = args[1].asString();
+            auto pos = str.find(target);
+            if (pos != std::string::npos) return Value(static_cast<double>(pos));
+        }
+        return Value(-1.0);
+    });
+
+    defineNative("str_replace", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 3 && args[0].isString() && args[1].isString() && args[2].isString()) {
+            std::string str = args[0].asString();
+            std::string from = args[1].asString();
+            std::string to = args[2].asString();
+            if (!from.empty()) {
+                size_t start_pos = 0;
+                while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+                    str.replace(start_pos, from.length(), to);
+                    start_pos += to.length();
+                }
+            }
+            return Value(str);
+        }
+        return Value("");
+    });
+
+    defineNative("str_split", [](int argCount, const Value* args) -> Value {
+        auto resultArr = std::make_shared<std::vector<Value>>();
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            std::string str = args[0].asString();
+            std::string delim = args[1].asString();
+            if (delim.empty()) {
+                for (char c : str) resultArr->push_back(Value(std::string(1, c)));
+            } else {
+                size_t start = 0;
+                size_t end = str.find(delim);
+                while (end != std::string::npos) {
+                    resultArr->push_back(Value(str.substr(start, end - start)));
+                    start = end + delim.length();
+                    end = str.find(delim, start);
+                }
+                resultArr->push_back(Value(str.substr(start)));
+            }
+        }
+        return Value(resultArr);
+    });
+
+    defineNative("str_trim", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::string s = args[0].asString();
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+            s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+            return Value(s);
+        }
+        return Value("");
+    });
+
+    defineNative("str_contains", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            return Value(args[0].asString().find(args[1].asString()) != std::string::npos);
+        }
+        return Value(false);
+    });
+
+    defineNative("str_starts_with", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            const std::string& str = args[0].asString();
+            const std::string& prefix = args[1].asString();
+            return Value(str.rfind(prefix, 0) == 0);
+        }
+        return Value(false);
+    });
+
+    defineNative("str_ends_with", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            const std::string& str = args[0].asString();
+            const std::string& suffix = args[1].asString();
+            if (str.length() >= suffix.length()) {
+                return Value(str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0);
+            }
+        }
+        return Value(false);
+    });
+
+    // --- File & Directory Operations ---
     defineNative("file_read", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
             std::ifstream file(args[0].asString());
@@ -389,12 +643,125 @@ void VM::registerNativeFunctions() {
         return Value(false);
     });
 
+    defineNative("file_append", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            std::ofstream file(args[0].asString(), std::ios::app);
+            if (file.is_open()) {
+                file << args[1].asString();
+                return Value(true);
+            }
+        }
+        return Value(false);
+    });
+
     defineNative("file_exists", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
             return Value(std::filesystem::exists(args[0].asString()));
         }
         return Value(false);
     });
+
+    defineNative("file_remove", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            return Value(std::filesystem::remove(args[0].asString()));
+        }
+        return Value(false);
+    });
+
+    defineNative("file_size", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::error_code ec;
+            auto size = std::filesystem::file_size(args[0].asString(), ec);
+            if (!ec) return Value(static_cast<double>(size));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("file_copy", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            std::error_code ec;
+            std::filesystem::copy_file(args[0].asString(), args[1].asString(), std::filesystem::copy_options::overwrite_existing, ec);
+            return Value(!ec);
+        }
+        return Value(false);
+    });
+
+    defineNative("dir_list", [](int argCount, const Value* args) -> Value {
+        auto arr = std::make_shared<std::vector<Value>>();
+        if (argCount > 0 && args[0].isString()) {
+            std::string path = args[0].asString();
+            std::error_code ec;
+            if (std::filesystem::exists(path, ec) && std::filesystem::is_directory(path, ec)) {
+                for (const auto& entry : std::filesystem::directory_iterator(path, ec)) {
+                    arr->push_back(Value(entry.path().filename().string()));
+                }
+            }
+        }
+        return Value(arr);
+    });
+
+    defineNative("dir_list_ext", [](int argCount, const Value* args) -> Value {
+        auto arr = std::make_shared<std::vector<Value>>();
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            std::string path = args[0].asString();
+            std::string ext = args[1].asString();
+            if (!ext.empty() && ext[0] != '.') ext = "." + ext;
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+            std::error_code ec;
+            if (std::filesystem::exists(path, ec) && std::filesystem::is_directory(path, ec)) {
+                for (const auto& entry : std::filesystem::directory_iterator(path, ec)) {
+                    std::string entryExt = entry.path().extension().string();
+                    std::transform(entryExt.begin(), entryExt.end(), entryExt.begin(), ::tolower);
+                    if (entryExt == ext) {
+                        arr->push_back(Value(entry.path().string()));
+                    }
+                }
+            }
+        }
+        return Value(arr);
+    });
+
+    defineNative("dir_exists", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::error_code ec;
+            return Value(std::filesystem::is_directory(args[0].asString(), ec));
+        }
+        return Value(false);
+    });
+
+    defineNative("dir_create", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::error_code ec;
+            return Value(std::filesystem::create_directories(args[0].asString(), ec));
+        }
+        return Value(false);
+    });
+
+    // --- Module Import ---
+    defineNative("import", [this](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::string path = args[0].asString();
+            if (loadedModules_.count(path) > 0) {
+                return Value(true); // Already imported
+            }
+            loadedModules_.insert(path);
+            InterpretResult res = this->interpretFile(path);
+            return Value(res == InterpretResult::INTERPRET_OK);
+        }
+        return Value(false);
+    });
+}
+
+InterpretResult VM::interpretFile(const std::string& filepath) {
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "[VM Error] Could not open file: " << filepath << std::endl;
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return interpret(buffer.str());
 }
 
 void VM::defineNative(const std::string& name, NativeFn fn) {

@@ -1,0 +1,56 @@
+// SRL Standard Library - Desktop GUI Widget Framework (std/widget.srl)
+import("std/gfx.srl");
+
+fn widget_button_create(x, y, w, h, text, color) {
+    var btn = map_new();
+    map_set(btn, "x", x);
+    map_set(btn, "y", y);
+    map_set(btn, "w", w);
+    map_set(btn, "h", h);
+    map_set(btn, "text", text);
+    map_set(btn, "color", color);
+    return btn;
+}
+
+fn widget_button_render(btn) {
+    var x = map_get(btn, "x");
+    var y = map_get(btn, "y");
+    var w = map_get(btn, "w");
+    var h = map_get(btn, "h");
+    var text = map_get(btn, "text");
+    var col = map_get(btn, "color");
+
+    gfx_fill_rect(x, y, w, h, col);
+    gfx_draw_rect(x, y, w, h, "white");
+    gfx_draw_text(x + 15, y + 10, text, "white");
+}
+
+fn widget_slider_create(x, y, w, min_val, max_val, current_val) {
+    var s = map_new();
+    map_set(s, "x", x);
+    map_set(s, "y", y);
+    map_set(s, "w", w);
+    map_set(s, "min", min_val);
+    map_set(s, "max", max_val);
+    map_set(s, "val", current_val);
+    return s;
+}
+
+fn widget_slider_render(slider) {
+    var x = map_get(slider, "x");
+    var y = map_get(slider, "y");
+    var w = map_get(slider, "w");
+    var min_v = map_get(slider, "min");
+    var max_v = map_get(slider, "max");
+    var val = map_get(slider, "val");
+
+    // Line track
+    gfx_draw_line(x, y + 10, x + w, y + 10, "gray");
+
+    // Thumb position
+    var ratio = (val - min_v) / (max_v - min_v);
+    var thumb_x = x + math_floor(w * ratio);
+
+    gfx_fill_circle(thumb_x, y + 10, 8, "cyan");
+    gfx_draw_text(x + w + 15, y, "%" + to_string(math_floor(val)), "white");
+}
