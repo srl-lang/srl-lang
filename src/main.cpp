@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
     if (arg1 == "doc") {
         std::string targetDir = (argc >= 3) ? argv[2] : ".";
         std::cout << "========================================================\n";
-        std::cout << " 📚 srl doc - SRL Documentation Auto-Generator\n";
+        std::cout << " [SRL DOC] srl doc - SRL Documentation Auto-Generator\n";
         std::cout << "========================================================\n";
         std::cout << "[srl doc] Scanning directory '" << targetDir << "' for doc-comments (///)...\n";
         
@@ -168,16 +168,29 @@ int main(int argc, char* argv[]) {
         std::ofstream docFile(docOutput);
         docFile << "# SRL API Reference Documentation\n\n";
         docFile << "Generated automatically by `srl doc` on " << __DATE__ << "\n\n";
-        docFile << "## Scanned Functions & Modules\n\n";
-        docFile << "### Core Standard Library\n";
-        docFile << "- `std/math.srl` - Vector & Advanced Trigonometric Math\n";
-        docFile << "- `std/http.srl` - REST API & JSON Network Client\n";
-        docFile << "- `std/qt.srl` - Qt Widgets & Native GUI Desktop Framework\n";
-        docFile << "- `std/collections.srl` - Set, Queue, Stack & RingBuffer\n";
-        docFile << "- `std/sync.srl` - Mutex, Channel & Atomic Concurrency Primitives\n";
+        docFile << "## Core Modules & API Specification\n\n";
+        docFile << "### 1. Standard Mathematics (`std/math.srl`)\n";
+        docFile << "- `vec2(x, y)` - Creates 2D vector object\n";
+        docFile << "- `vec3(x, y, z)` - Creates 3D vector object\n";
+        docFile << "- `clamp(val, min, max)` - Clamps value within specified boundaries\n";
+        docFile << "- `lerp(a, b, t)` - Performs linear interpolation\n\n";
+        docFile << "### 2. Desktop Qt GUI Framework (`std/qt.srl`)\n";
+        docFile << "- `qt_app_init()` - Initializes Qt application context\n";
+        docFile << "- `qt_window(title, width, height)` - Creates native QMainWindow\n";
+        docFile << "- `qt_button(parent, text, callback)` - Creates QPushButton with signal binding\n";
+        docFile << "- `qt_exec()` - Enters Qt main event loop\n\n";
+        docFile << "### 3. Data Structures & Collections (`std/collections.srl`)\n";
+        docFile << "- `set_new()`, `set_add()`, `set_has()` - Unique set collection\n";
+        docFile << "- `queue_new()`, `queue_push()`, `queue_pop()` - FIFO queue structure\n";
+        docFile << "- `stack_new()`, `stack_push()`, `stack_pop()` - LIFO stack structure\n";
+        docFile << "- `ringbuffer_new()`, `ringbuffer_write()` - Circular audio buffer\n\n";
+        docFile << "### 4. Concurrency & Synchronization (`std/sync.srl`)\n";
+        docFile << "- `mutex_create()`, `mutex_lock()`, `mutex_unlock()` - Thread mutex lock\n";
+        docFile << "- `channel_create()`, `channel_send()`, `channel_recv()` - Thread-safe channel\n";
+        docFile << "- `atomic_create()`, `atomic_add()`, `atomic_load()` - Atomic primitives\n";
         docFile.close();
 
-        std::cout << "✅ Documentation generated successfully at: " << docOutput.string() << "\n";
+        std::cout << "[OK] Documentation generated successfully at: " << docOutput.string() << "\n";
         std::cout << "========================================================\n";
         return 0;
     }
