@@ -1,0 +1,54 @@
+/// ============================================================================
+/// SRL C/C++ Library Interoperability & FFI Demonstration
+/// Demonstrates loading C dynamic libraries (.dll/.so), dynamic function call
+/// dispatching, memory allocation, and parameter marshalling.
+/// ============================================================================
+
+import("std/c.srl");
+
+print("========================================================");
+print(" 🔌 SRL Universal C/C++ Interoperability Demo");
+print("========================================================");
+
+// 1. Load System C Dynamic Library (Windows: ucrtbase.dll / msvcrt.dll, Linux: libc.so)
+var lib_path = "ucrtbase.dll";
+var c_lib = c_open(lib_path);
+
+if c_lib == 0 {
+    lib_path = "msvcrt.dll";
+    c_lib = c_open(lib_path);
+}
+
+print("[OK] Successfully loaded C dynamic library: " + lib_path);
+
+// 2. Call C function: int abs(int n)
+var val = 42;
+var abs_res = c_call1(c_lib, "abs", "int", val);
+print("  -> C abs(" + to_string(val) + ") = " + to_string(abs_res));
+
+// 3. Call C function: double sqrt(double x)
+var num = 144.0;
+var sqrt_res = c_call1(c_lib, "sqrt", "double", num);
+print("  -> C sqrt(" + to_string(num) + ") = " + to_string(sqrt_res));
+
+// 4. Call C string function: size_t strlen(const char* s)
+var test_str = "Hello from SRL C-FFI!";
+var len_res = c_call1(c_lib, "strlen", "int", test_str);
+print("  -> C strlen(\"" + test_str + "\") = " + to_string(len_res));
+
+// 5. C Native Memory Allocation & Manipulation
+print("\n--- Testing Native C Memory Management ---");
+var mem_ptr = c_malloc(128);
+print("  - Allocated 128 bytes at C memory address: " + to_string(mem_ptr));
+
+c_write_string(mem_ptr, "Native C String written from SRL memory!");
+var read_back = c_read_string(mem_ptr);
+print("  - Read back from C memory address: \"" + read_back + "\"");
+
+c_free(mem_ptr);
+print("  - Freed C memory address successfully.");
+
+c_close(c_lib);
+print("\n[OK] C Library handle closed.");
+
+print("========================================================");

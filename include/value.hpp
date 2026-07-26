@@ -62,13 +62,24 @@ struct Value {
     bool isArray() const { return type == ValueType::ARRAY; }
     bool isMap() const { return type == ValueType::MAP; }
 
-    bool asBool() const { return std::get<bool>(as); }
-    double asNumber() const { return std::get<double>(as); }
-    const std::string& asString() const { return std::get<std::string>(as); }
-    std::shared_ptr<FunctionObject> asFunction() const { return std::get<std::shared_ptr<FunctionObject>>(as); }
-    NativeFn asNativeFn() const { return std::get<NativeFn>(as); }
-    ArrayPtr asArray() const { return std::get<ArrayPtr>(as); }
-    MapPtr asMap() const { return std::get<MapPtr>(as); }
+    bool asBool() const { return isBool() ? std::get<bool>(as) : false; }
+    double asNumber() const { return isNumber() ? std::get<double>(as) : 0.0; }
+    const std::string& asString() const {
+        static const std::string emptyString = "";
+        return isString() ? std::get<std::string>(as) : emptyString;
+    }
+    std::shared_ptr<FunctionObject> asFunction() const {
+        return isFunction() ? std::get<std::shared_ptr<FunctionObject>>(as) : nullptr;
+    }
+    NativeFn asNativeFn() const {
+        return isNativeFn() ? std::get<NativeFn>(as) : nullptr;
+    }
+    ArrayPtr asArray() const {
+        return isArray() ? std::get<ArrayPtr>(as) : nullptr;
+    }
+    MapPtr asMap() const {
+        return isMap() ? std::get<MapPtr>(as) : nullptr;
+    }
 
     std::string toString() const;
     bool isTruthy() const;

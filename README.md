@@ -1,66 +1,68 @@
 # SRL (Serial Run Language)
 
-**SRL (Serial Run Language)** is a high-performance, lightweight hybrid programming language designed for **Digital Signal Processing (DSP)**, **Real-Time Audio Analysis (FFT)**, **Self-Hosted LLVM Compilation**, **Live Hot-Reloading**, and **System Tooling**.
+**SRL (Serial Run Language)** is a high-performance, lightweight hybrid programming language designed for **Digital Signal Processing (DSP)**, **Real-Time Audio Analysis (FFT)**, **Universal C/C++ Interoperability**, **Self-Hosted LLVM Compilation**, **Live Hot-Reloading**, and **Native Desktop GUI Tooling**.
 
 Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hosted compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
 ---
 
-## Core Capabilities
+## 📚 Documentation & Specifications
 
-- **Self-Hosted Compiler (`srlc.srl`):** Fully bootstrapped compiler written in SRL that parses source code, constructs ASTs, and generates standalone x86_64 LLVM IR assembly (`.ll`).
-- **Package Manager (`srl pm`):** Built-in package initialization (`srl init`) and GitHub library installation (`srl install user/repo`) into `srl_modules/`.
-- **Live Code Hot-Reloading:** Modify `.srl` scripts on-the-fly while preserving runtime variable states. Ideal for live audio synthesis and real-time monitoring.
-- **Built-in DSP & FFT Engine:** Native Fast Fourier Transform (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), IIR filtering, and ASCII waveform plotting (`dsp_plot`).
-- **Standard Library Suite:** Modular standard kütüphane components for vectors & 3D math (`std/math.srl`), REST HTTP requests (`std/http.srl`), assertions & testing (`std/testing.srl`), and OS environment utilities (`std/env.srl`).
-- **Testing & Benchmarking:** Integrated unit test runner (`srl test`) and microsecond-precision benchmark engine (`srl bench`).
-- **Structs & Metatables:** C-style struct definitions combined with Lua-style prototype inheritance and metamethod fallbacks.
+All technical specifications, manuals, and developer guidelines are organized in the [`docs/`](docs/) directory:
+
+- 📑 **[Technical Specification Manual](docs/SRL_LANGUAGE_MANUAL.md):** Complete technical manual covering VM architecture, compiler pipeline, memory management, exception handling, generics, and RTTI.
+- 📐 **[Formal EBNF Syntax Grammar](docs/ebnf_grammar.md):** Formal Extended Backus-Naur Form grammar specification for compiler and parser implementers.
+- 🔌 **[API & Stdlib Reference](docs/api_reference.md):** Comprehensive reference for standard library functions and CLI commands.
 
 ---
 
-## CLI Usage Guide
+## 🔥 Core Capabilities
 
-### 1. Run Script (Bytecode VM)
-
-```bash
-srl run examples/package_demo.srl
-```
-
-### 2. Self-Hosted Compiler Mode
-
-```bash
-srl compile examples/self_host_demo.srl -o self_demo.exe
-```
-
-### 3. Run Unit Test Suite
-
-```bash
-srl test examples/math.test.srl
-```
-
-### 4. Benchmark Script Performance
-
-```bash
-srl bench examples/package_demo.srl
-```
-
-### 5. Live Hot-Reloading Mode
-
-```bash
-srl watch examples/dsp_demo.srl
-```
-
-### 6. Initialize Package
-
-```bash
-srl init my_srl_app
-```
+- **🔌 Universal C/C++ Interoperability:** Call any C dynamic library (`.dll`, `.so`, `.dylib`) directly with `std/c.srl`, auto-generate SRL wrappers from `.h` headers using `srl bind`, or build native C++ extensions via `srl_plugin.h`.
+- **🚀 Self-Hosted Compiler (`srlc.srl`):** Bootstrapped compiler written entirely in SRL that tokenizes code, builds ASTs, and generates standalone LLVM IR binaries (`.ll` / `.exe`).
+- **🔥 Live Zero-Downtime Hot-Reloading (`srl watch`):** Modify `.srl` scripts on-the-fly while retaining active global runtime variable states. Ideal for live audio synthesis.
+- **🎵 Built-in DSP & FFT Engine:** Native Fast Fourier Transform (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), IIR filters, and terminal ASCII plotting (`dsp_plot`).
+- **🖥️ Native Desktop Qt GUI (`std/qt.srl`):** Create desktop windows, widgets, and graphical dashboards directly from SRL scripts.
+- **📦 Package Manager (`srl pm`):** Project initialization (`srl init`) and GitHub package resolution (`srl install user/repo`) into `srl_modules/`.
+- **🧪 Integrated Testing & Benchmarking:** Unit test runner (`srl test`) and microsecond-precision performance benchmark engine (`srl bench`).
 
 ---
 
-## Code Examples
+## 🛠️ CLI Usage Guide
 
-### 1. Audio Signal Generation & Fast Fourier Transform (FFT)
+| Command | Description |
+| :--- | :--- |
+| `srl run <script.srl>` | Execute SRL script inside the Bytecode Virtual Machine |
+| `srl compile <script.srl> [-o bin]` | Compile SRL script using self-hosted `compiler/srlc.srl` |
+| `srl build <script.srl> [-o bin]` | Compile SRL script into standalone native binary |
+| `srl bind <header.h> [-o out.srl]` | Auto-generate SRL bindings from C header file |
+| `srl watch <script.srl>` | Run SRL script with Live Hot-Reloading |
+| `srl init [project_name]` | Initialize new SRL package manifest (`srl.json`) |
+| `srl install <user/repo>` | Install dependency package from GitHub |
+| `srl test [test_file.srl]` | Execute SRL test suite |
+| `srl bench <script.srl>` | Benchmark script execution time & memory |
+| `srl doc` | Auto-generate Markdown documentation from `///` comments |
+
+---
+
+## 💡 Code Examples
+
+### 1. Universal C Library Call & Memory Allocation
+
+```srl
+import("std/c.srl");
+
+var c_lib = c_open("ucrtbase.dll");
+var sqrt_res = c_call1(c_lib, "sqrt", "double", 144.0); // 12.0
+
+var ptr = c_malloc(128);
+c_write_string(ptr, "Hello C Memory from SRL!");
+print(c_read_string(ptr));
+c_free(ptr);
+c_close(c_lib);
+```
+
+### 2. Audio Signal Generation & Fast Fourier Transform (FFT)
 
 ```srl
 var sample_rate = 8000;
@@ -76,46 +78,27 @@ var mag = dsp_magnitude(fft_res["real"], fft_res["imag"]);
 dsp_plot(mag, 8, "Frequency Spectrum");
 ```
 
-### 2. Math & Vector Operations
+### 3. Native Qt Desktop GUI
 
 ```srl
-import("std/math.srl");
+import("std/qt.srl");
 
-var v1 = vec2(3, 4);
-var v2 = vec2(1, 2);
-var v_sum = vec2_add(v1, v2);
-
-print("Vector 1 Length: " + to_string(vec2_length(v1)));
-print("Vector Sum: (" + to_string(map_get(v_sum, "x")) + ", " + to_string(map_get(v_sum, "y")) + ")");
-```
-
-### 3. Structs & Metatable Prototypes
-
-```srl
-struct Point3D { x, y, z }
-
-var p1 = Point3D(10, 20, 30);
-print("Point x: " + to_string(map_get(p1, "x")));
-
-var Prototype = map_new();
-map_set(Prototype, "tag", "SRL_NATIVE_OBJECT");
-
-var meta = map_new();
-map_set(meta, "__index", Prototype);
-setmetatable(p1, meta);
+qt_app_init();
+var win = qt_window("SRL Qt Application", 450, 350);
+qt_exec();
 ```
 
 ---
 
-## VS Code Extension
+## 🧩 VS Code IDE Extension
 
 Language support extension located in `srl-vscode-extension`:
 - Syntax Highlighting (`.srl`)
 - Snippet Auto-completion
-- `.vsix` pre-packaged installer bundle included
+- Pre-packaged `.vsix` installer included
 
 ---
 
-## License
+## 📄 License
 
 Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for details.

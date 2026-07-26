@@ -1,0 +1,62 @@
+/// SRL Standard C & C++ Library Interoperability Wrapper (std/c.srl)
+/// Provides seamless loading, parameter marshalling, and binding of native C/C++ shared libraries.
+
+fn c_open(lib_path) {
+    var handle = ffi_load(lib_path);
+    if handle == 0 {
+        print("[std/c.srl] Error: Failed to load library '" + to_string(lib_path) + "'");
+    }
+    return handle;
+}
+
+fn c_close(handle) {
+    return ffi_free(handle);
+}
+
+fn c_call(handle, symbol_name, return_type) {
+    return ffi_call(handle, symbol_name, return_type);
+}
+
+fn c_call1(handle, symbol_name, return_type, a1) {
+    return ffi_call(handle, symbol_name, return_type, a1);
+}
+
+fn c_call2(handle, symbol_name, return_type, a1, a2) {
+    return ffi_call(handle, symbol_name, return_type, a1, a2);
+}
+
+fn c_call3(handle, symbol_name, return_type, a1, a2, a3) {
+    return ffi_call(handle, symbol_name, return_type, a1, a2, a3);
+}
+
+fn c_call_arr(handle, symbol_name, return_type, args_array) {
+    return ffi_call(handle, symbol_name, return_type, arr_new(), args_array);
+}
+
+fn c_malloc(bytes) {
+    return ffi_malloc(bytes);
+}
+
+fn c_free(addr) {
+    return ffi_free_mem(addr);
+}
+
+fn c_read_string(addr) {
+    return ffi_read_string(addr);
+}
+
+fn c_write_string(addr, str_val) {
+    return ffi_write_string(addr, str_val);
+}
+
+fn c_read_num(addr, type_name) {
+    return ffi_read_number(addr, type_name);
+}
+
+fn c_write_num(addr, num_val, type_name) {
+    return ffi_write_number(addr, num_val, type_name);
+}
+
+fn c_import_native(plugin_path) {
+    return import_native(plugin_path);
+}

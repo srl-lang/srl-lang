@@ -30,6 +30,7 @@ static void printUsage() {
     std::cout << "  srl compile <file.srl> [-o bin] Self-Hosted Compilation using srlc.srl\n";
     std::cout << "  srl bootstrap                   Self-hosting compiler bootstrapping test\n";
     std::cout << "  srl build <file.srl> [-o bin]   Compile SRL script to Standalone Native Binary\n";
+    std::cout << "  srl bind <header.h> [-o out]   Auto-generate SRL bindings from C header file\n";
     std::cout << "  srl watch <file.srl>            Run SRL script with Live Hot-Reloading\n";
     std::cout << "  srl init [project_name]        Initialize a new SRL package manifest (srl.json)\n";
     std::cout << "  srl install <user/repo>        Install package from GitHub into srl_modules/\n";
@@ -337,6 +338,64 @@ int main(int argc, char* argv[]) {
         std::string buildCmd = "\"" + srlcPath.string() + "\" \"" + filePath + "\"" + outOption;
         std::cout << "[SRL Build] Executing: " << buildCmd << std::endl;
         return std::system(buildCmd.c_str());
+    }
+
+    if (arg1 == "bind") {
+        if (argc < 3) {
+            std::cerr << "[SRL Error] Expected header file: srl bind <header.h> [-o output.srl]\n";
+            return 1;
+        }
+        std::string headerPath = argv[2];
+        std::string outPath = "bindings.srl";
+        for (int i = 3; i < argc; ++i) {
+            std::string a = argv[i];
+            if (a == "-o" && i + 1 < argc) {
+                outPath = argv[++i];
+            }
+        }
+
+        std::ifstream infile(headerPath);
+        if (!infile.is_open()) {
+            std::cerr << "[SRL Bind Error] Could not open C header file: " << headerPath << std::endl;
+            return 1;
+        }
+
+        std::stringstream outCode;
+        outCode << "/// Auto-generated SRL C/C++ Bindings for: " << headerPath << "\n";
+        outCode << "import(\"std/c.srl\");\n\n";
+        outCode << "var _lib = c_open(\"my_library.dll\");\n\n";
+
+        std::string line;
+        int boundCount = 0;
+        while (std::getline(infile, line)) {
+            size_t commentPos = line.find("//");
+            if (commentPos != std::string::npos) line = line.substr(0, commentPos);
+
+            size_t parenOpen = line.find('(');
+            size_t parenClose = line.find(')');
+            size_t semicolon = line.find(';');
+            if (parenOpen != std::string::npos && parenClose != std::string::npos && semicolon != std::string::npos && parenOpen < parenClose && parenClose < semicolon) {
+                std::string beforeParen = line.substr(0, parenOpen);
+                std::stringstream ss(beforeParen);
+                std::vector<std::string> tokens;
+                std::string tok;
+                while (ss >> tok) tokens.push_back(tok);
+
+                if (tokens.size() >= 2) {
+                    std::string funcName = tokens.back();
+                    std::string retType = tokens[tokens.size() - 2];
+                    outCode << "// Binding for: " << line << "\n";
+                    outCode << "fn " << funcName << "(a1) { return c_call1(_lib, \"" << funcName << "\", \"" << retType << "\", a1); }\n\n";
+                    boundCount++;
+                }
+            }
+        }
+
+        std::ofstream outfile(outPath);
+        outfile << outCode.str();
+        outfile.close();
+        std::cout << "✨ Successfully generated " << boundCount << " C function bindings in '" << outPath << "'!\n";
+        return 0;
     }
 
     // Default fallback: direct run if file path passed
