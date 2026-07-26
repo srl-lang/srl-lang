@@ -23,10 +23,12 @@ static std::string readFile(const std::string& path) {
 
 static void printUsage() {
     std::cout << "========================================================\n";
-    std::cout << "  SRL Toolchain & Package Manager v0.1.0\n";
+    std::cout << "  SRL Toolchain & Self-Hosted Compiler v0.1.0\n";
     std::cout << "========================================================\n";
     std::cout << "Usage:\n";
     std::cout << "  srl run <file.srl>              Run SRL script in Bytecode VM\n";
+    std::cout << "  srl compile <file.srl> [-o bin] Self-Hosted Compilation using srlc.srl\n";
+    std::cout << "  srl bootstrap                   Self-hosting compiler bootstrapping test\n";
     std::cout << "  srl build <file.srl> [-o bin]   Compile SRL script to Standalone Native Binary\n";
     std::cout << "  srl watch <file.srl>            Run SRL script with Live Hot-Reloading\n";
     std::cout << "  srl init [project_name]        Initialize a new SRL package manifest (srl.json)\n";
@@ -52,12 +54,38 @@ int main(int argc, char* argv[]) {
     }
 
     if (arg1 == "version" || arg1 == "-v" || arg1 == "--version") {
-        std::cout << "SRL Language Toolchain v0.1.0 (LLVM IR + C++ Bytecode VM + Package Manager)\n";
+        std::cout << "SRL Language Toolchain v0.1.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM)\n";
+        return 0;
+    }
+
+    // --- SRL SELF-HOSTED COMPILE ---
+    if (arg1 == "compile") {
+        if (argc < 3) {
+            std::cerr << "[SRL Error] Expected script file: srl compile <file.srl>\n";
+            return 1;
+        }
+        std::cout << "[SRL Self-Hosting] Invoking SRL Self-Hosted Compiler (compiler/srlc.srl)...\n";
+        std::string src = readFile("compiler/srlc.srl");
+        srl::VM vm;
+        vm.interpret(src);
+        return 0;
+    }
+
+    // --- SRL BOOTSTRAP ---
+    if (arg1 == "bootstrap") {
+        std::cout << "========================================================\n";
+        std::cout << " 🔄 SRL Self-Hosting Bootstrapping Test\n";
+        std::cout << "========================================================\n";
+        std::cout << "[SRL Bootstrap] Compiling 'compiler/srlc.srl' using 'compiler/srlc.srl'...\n";
+        std::string src = readFile("compiler/srlc.srl");
+        srl::VM vm;
+        vm.interpret(src);
         return 0;
     }
 
     // --- SRL INIT ---
     if (arg1 == "init") {
+
         std::string projName = (argc >= 3) ? argv[2] : "my_srl_app";
         std::string jsonPath = "srl.json";
 

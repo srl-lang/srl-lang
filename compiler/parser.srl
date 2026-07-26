@@ -1,0 +1,210 @@
+// ============================================================================
+// SRL Self-Hosted Compiler - Syntax Parser (compiler/parser.srl)
+// ============================================================================
+
+fn parser_ast_node(node_type) {
+    var node = map_new();
+    map_set(node, "type", node_type);
+    return node;
+}
+
+fn parser_create_state(tokens) {
+    var st = map_new();
+    map_set(st, "tokens", tokens);
+    map_set(st, "current", 0);
+    map_set(st, "total", arr_len(tokens));
+    return st;
+}
+
+fn parser_peek_tok(st) {
+    var current = map_get(st, "current");
+    var total = map_get(st, "total");
+    var tokens = map_get(st, "tokens");
+    if current < total {
+        return arr_get(tokens, current);
+    }
+    return arr_get(tokens, total - 1);
+}
+
+fn parser_advance_tok(st) {
+    var tok = parser_peek_tok(st);
+    map_set(st, "current", map_get(st, "current") + 1);
+    return tok;
+}
+
+fn parser_check_type(st, expected_type) {
+    var tok = parser_peek_tok(st);
+    return map_get(tok, "type") == expected_type;
+}
+
+fn parser_match_tok(st, type_name) {
+    if parser_check_type(st, type_name) {
+        parser_advance_tok(st);
+        return true;
+    }
+    return false;
+}
+
+// --- Expression Parser ---
+fn parse_primary(st) {
+    if parser_match_tok(st, "NUMBER") {
+        var current = map_get(st, "current");
+        var tok = arr_get(map_get(st, "tokens"), current - 1);
+        var node = parser_ast_node("LITERAL");
+        map_set(node, "value", map_get(tok, "lexeme"));
+        map_set(node, "val_type", "NUMBER");
+        return node;
+    }
+    if parser_match_tok(st, "STRING") {
+        var current = map_get(st, "current");
+        var tok = arr_get(map_get(st, "tokens"), current - 1);
+        var node = parser_ast_node("LITERAL");
+        map_set(node, "value", map_get(tok, "lexeme"));
+        map_set(node, "val_type", "STRING");
+        return node;
+    }
+    if parser_match_tok(st, "TRUE") {
+        var node = parser_ast_node("LITERAL");
+        map_set(node, "value", "true");
+        map_set(node, "val_type", "BOOL");
+        return node;
+    }
+    if parser_match_tok(st, "FALSE") {
+        var node = parser_ast_node("LITERAL");
+        map_set(node, "value", "false");
+        map_set(node, "val_type", "BOOL");
+        return node;
+    }
+    if parser_match_tok(st, "IDENTIFIER") {
+        var current = map_get(st, "current");
+        var tok = arr_get(map_get(st, "tokens"), current - 1);
+        var name = map_get(tok, "lexeme");
+
+        // Function Call check
+        if parser_match_tok(st, "LEFT_PAREN") {
+            var call_node = parser_ast_node("CALL");
+            map_set(call_node, "callee", name);
+            var args = arr_new();
+            if !parser_check_type(st, "RIGHT_PAREN") {
+                arr_push(args, parse_primary(st));
+                while parser_match_tok(st, "COMMA") {
+                    arr_push(args, parse_primary(st));
+                }
+            }
+            parser_match_tok(st, "RIGHT_PAREN");
+            map_set(call_node, "args", args);
+            return call_node;
+        }
+
+        var node = parser_ast_node("VARIABLE");
+        map_set(node, "name", name);
+        return node;
+    }
+    if parser_match_tok(st, "LEFT_PAREN") {
+        var expr = parse_expression(st);
+        parser_match_tok(st, "RIGHT_PAREN");
+        return expr;
+    }
+
+    var node = parser_ast_node("LITERAL");
+    map_set(node, "value", "nil");
+    map_set(node, "val_type", "NIL");
+    return node;
+}
+
+fn parse_expression(st) {
+    var left = parse_primary(st);
+    if parser_match_tok(st, "PLUS") || parser_match_tok(st, "MINUS") || parser_match_tok(st, "STAR") || parser_match_tok(st, "SLASH") || parser_match_tok(st, "EQUAL_EQUAL") || parser_match_tok(st, "LESS") || parser_match_tok(st, "GREATER") {
+        var current = map_get(st, "current");
+        var op_tok = arr_get(map_get(st, "tokens"), current - 1);
+        var right = parse_primary(st);
+        var bin_node = parser_ast_node("BINARY");
+        map_set(bin_node, "op", map_get(op_tok, "lexeme"));
+        map_set(bin_node, "left", left);
+        map_set(bin_node, "right", right);
+        return bin_node;
+    }
+    return left;
+}
+
+// --- Statement Parsers ---
+fn parse_var_declaration(st) {
+    var name_tok = parser_advance_tok(st);
+    var var_name = map_get(name_tok, "lexeme");
+    var init_expr = nil;
+    if parser_match_tok(st, "EQUAL") {
+        init_expr = parse_expression(st);
+    }
+    parser_match_tok(st, "SEMICOLON");
+
+    var node = parser_ast_node("VAR_DECL");
+    map_set(node, "name", var_name);
+    map_set(node, "initializer", init_expr);
+    return node;
+}
+
+fn parse_function_declaration(st) {
+    var name_tok = parser_advance_tok(st);
+    var fn_name = map_get(name_tok, "lexeme");
+    parser_match_tok(st, "LEFT_PAREN");
+    var params = arr_new();
+    if !parser_check_type(st, "RIGHT_PAREN") {
+        if parser_match_tok(st, "IDENTIFIER") {
+            var current = map_get(st, "current");
+            arr_push(params, map_get(arr_get(map_get(st, "tokens"), current - 1), "lexeme"));
+        }
+        while parser_match_tok(st, "COMMA") {
+            if parser_match_tok(st, "IDENTIFIER") {
+                var current = map_get(st, "current");
+                arr_push(params, map_get(arr_get(map_get(st, "tokens"), current - 1), "lexeme"));
+            }
+        }
+    }
+    parser_match_tok(st, "RIGHT_PAREN");
+    parser_match_tok(st, "LEFT_BRACE");
+
+    var body_stmts = arr_new();
+    while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+        arr_push(body_stmts, parse_statement(st));
+    }
+    parser_match_tok(st, "RIGHT_BRACE");
+
+    var node = parser_ast_node("FN_DECL");
+    map_set(node, "name", fn_name);
+    map_set(node, "params", params);
+    map_set(node, "body", body_stmts);
+    return node;
+}
+
+fn parse_statement(st) {
+    if parser_match_tok(st, "VAR") {
+        return parse_var_declaration(st);
+    }
+    if parser_match_tok(st, "FN") {
+        return parse_function_declaration(st);
+    }
+    if parser_match_tok(st, "RETURN") {
+        var ret_expr = parse_expression(st);
+        parser_match_tok(st, "SEMICOLON");
+        var node = parser_ast_node("RETURN_STMT");
+        map_set(node, "value", ret_expr);
+        return node;
+    }
+
+    var expr = parse_expression(st);
+    parser_match_tok(st, "SEMICOLON");
+    var node = parser_ast_node("EXPR_STMT");
+    map_set(node, "expr", expr);
+    return node;
+}
+
+fn parser_parse(tokens) {
+    var ast_statements = arr_new();
+    var st = parser_create_state(tokens);
+
+    while !parser_check_type(st, "EOF") {
+        arr_push(ast_statements, parse_statement(st));
+    }
+
+    return ast_statements;
+}

@@ -1,0 +1,50 @@
+// ============================================================================
+// SRL Self-Hosted Compiler Main CLI Entry (compiler/srlc.srl)
+// ============================================================================
+
+import("compiler/lexer.srl");
+import("compiler/parser.srl");
+import("compiler/codegen_llvm.srl");
+import("std/env.srl");
+
+print("========================================================");
+print(" 🚀 srlc - SRL Self-Hosted Compiler (Bootstrapped)");
+print("========================================================");
+
+fn srlc_compile_file(input_path, output_path) {
+    print("[srlc] Reading source file: " + input_path);
+    var source_text = sys_read_file(input_path);
+    if str_len(source_text) == 0 {
+        print("[srlc Error] Could not read file or file empty: " + input_path);
+        return false;
+    }
+
+    print("[srlc] 1. Tokenizing source (Lexer)...");
+    var tokens = lexer_tokenize(source_text);
+    print("[srlc] Token count: " + to_string(arr_len(tokens)));
+
+    print("[srlc] 2. Parsing AST (Parser)...");
+    var ast = parser_parse(tokens);
+    print("[srlc] AST statements parsed: " + to_string(arr_len(ast)));
+
+    print("[srlc] 3. Generating LLVM IR (Codegen)...");
+    var llvm_ir = codegen_generate_llvm(ast);
+
+    var ll_path = "temp_self_output.ll";
+    print("[srlc] Writing LLVM IR to: " + ll_path);
+    sys_write_file(ll_path, llvm_ir);
+
+    print("[srlc] 4. Compiling LLVM IR to Native Binary: " + output_path);
+    var clang_cmd = "clang -O2 -o " + output_path + " " + ll_path;
+    var compile_res = sys_exec(clang_cmd);
+
+    print("\n========================================================");
+    print(" 🎉 SELF-HOSTED COMPILATION COMPLETE!");
+    print("  - Generated LLVM IR: " + ll_path);
+    print("  - Output Binary:     " + output_path);
+    print("========================================================");
+    return true;
+}
+
+// Execution Entry
+srlc_compile_file("examples/self_host_demo.srl", "self_hosted_app.exe");

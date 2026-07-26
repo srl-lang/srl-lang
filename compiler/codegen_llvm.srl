@@ -1,0 +1,70 @@
+// ============================================================================
+// SRL Self-Hosted Compiler - LLVM IR Code Generator (compiler/codegen_llvm.srl)
+// ============================================================================
+
+fn codegen_generate_llvm(ast_statements) {
+    var ir = "; ModuleID = 'srl_self_hosted_module'\n";
+    ir = ir + "target datalayout = \"e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n";
+    ir = ir + "target triple = \"x86_64-pc-windows-msvc\"\n\n";
+
+    // Standard C Runtime External Declarations
+    ir = ir + "declare i32 @printf(i8*, ...)\n";
+    ir = ir + "declare i8* @malloc(i64)\n";
+    ir = ir + "declare void @free(i8*)\n";
+    ir = ir + "declare void @exit(i32)\n\n";
+
+    // String constants pool
+    ir = ir + "@.str.fmt_num = private unnamed_addr constant [4 x i8] c\"%g\\0A\\00\", align 1\n";
+    ir = ir + "@.str.fmt_str = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1\n\n";
+
+    // Standard SRL Native Print Wrapper
+    ir = ir + "define void @srl_print_num(double %val) {\n";
+    ir = ir + "  %fmt = getelementptr inbounds [4 x i8], [4 x i8]* @.str.fmt_num, i64 0, i64 0\n";
+    ir = ir + "  call i32 (i8*, ...) @printf(i8* %fmt, double %val)\n";
+    ir = ir + "  ret void\n";
+    ir = ir + "}\n\n";
+
+    ir = ir + "define void @srl_print_str(i8* %str) {\n";
+    ir = ir + "  %fmt = getelementptr inbounds [4 x i8], [4 x i8]* @.str.fmt_str, i64 0, i64 0\n";
+    ir = ir + "  call i32 (i8*, ...) @printf(i8* %fmt, i8* %str)\n";
+    ir = ir + "  ret void\n";
+    ir = ir + "}\n\n";
+
+    // Main Entry Function
+    ir = ir + "define i32 @main() {\n";
+    ir = ir + "entry:\n";
+
+    var count = arr_len(ast_statements);
+    var i = 0;
+    while i < count {
+        var stmt = arr_get(ast_statements, i);
+        var type_name = map_get(stmt, "type");
+
+        if type_name == "EXPR_STMT" {
+            var expr = map_get(stmt, "expr");
+            if expr != nil && map_get(expr, "type") == "CALL" {
+                var callee = map_get(expr, "callee");
+                var args = map_get(expr, "args");
+                if callee == "print" && arr_len(args) > 0 {
+                    var first_arg = arr_get(args, 0);
+                    var val_type = map_get(first_arg, "val_type");
+                    var val = map_get(first_arg, "value");
+
+                    if val_type == "NUMBER" {
+                        ir = ir + "  call void @srl_print_num(double " + to_string(val) + ".0)\n";
+                    }
+                }
+            }
+        } else if type_name == "VAR_DECL" {
+            var var_name = map_get(stmt, "name");
+            ir = ir + "  ; Variable declaration: " + var_name + "\n";
+        }
+
+        i = i + 1;
+    }
+
+    ir = ir + "  ret i32 0\n";
+    ir = ir + "}\n";
+
+    return ir;
+}

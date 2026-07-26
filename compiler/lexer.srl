@@ -1,0 +1,160 @@
+// ============================================================================
+// SRL Self-Hosted Compiler - Lexical Analyzer (compiler/lexer.srl)
+// ============================================================================
+
+fn lexer_create_token(type_name, lexeme_str, line_num) {
+    var tok = map_new();
+    map_set(tok, "type", type_name);
+    map_set(tok, "lexeme", lexeme_str);
+    map_set(tok, "line", line_num);
+    return tok;
+}
+
+fn lexer_is_digit(ch) {
+    return ch == "0" || ch == "1" || ch == "2" || ch == "3" || ch == "4" ||
+           ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9";
+}
+
+fn lexer_is_alpha(ch) {
+    return (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || ch == "_";
+}
+
+fn lexer_is_alnum(ch) {
+    return lexer_is_alpha(ch) || lexer_is_digit(ch);
+}
+
+fn lexer_tokenize(source) {
+    var tokens = arr_new();
+    var len = str_len(source);
+    var i = 0;
+    var line = 1;
+
+    while i < len {
+        var ch = str_sub(source, i, 1);
+
+        // Newlines & Whitespace
+        if ch == "\n" {
+            line = line + 1;
+            i = i + 1;
+        } else if ch == " " || ch == "\r" || ch == "\t" {
+            i = i + 1;
+        } else if ch == "/" {
+            // Check for line comments //
+            if i + 1 < len && str_sub(source, i + 1, 1) == "/" {
+                i = i + 2;
+                while i < len && str_sub(source, i, 1) != "\n" {
+                    i = i + 1;
+                }
+            } else {
+                arr_push(tokens, lexer_create_token("SLASH", "/", line));
+                i = i + 1;
+            }
+        } else if ch == "+" {
+            arr_push(tokens, lexer_create_token("PLUS", "+", line));
+            i = i + 1;
+        } else if ch == "-" {
+            arr_push(tokens, lexer_create_token("MINUS", "-", line));
+            i = i + 1;
+        } else if ch == "*" {
+            arr_push(tokens, lexer_create_token("STAR", "*", line));
+            i = i + 1;
+        } else if ch == "(" {
+            arr_push(tokens, lexer_create_token("LEFT_PAREN", "(", line));
+            i = i + 1;
+        } else if ch == ")" {
+            arr_push(tokens, lexer_create_token("RIGHT_PAREN", ")", line));
+            i = i + 1;
+        } else if ch == "{" {
+            arr_push(tokens, lexer_create_token("LEFT_BRACE", "{", line));
+            i = i + 1;
+        } else if ch == "}" {
+            arr_push(tokens, lexer_create_token("RIGHT_BRACE", "}", line));
+            i = i + 1;
+        } else if ch == "," {
+            arr_push(tokens, lexer_create_token("COMMA", ",", line));
+            i = i + 1;
+        } else if ch == ";" {
+            arr_push(tokens, lexer_create_token("SEMICOLON", ";", line));
+            i = i + 1;
+        } else if ch == "=" {
+            if i + 1 < len && str_sub(source, i + 1, 1) == "=" {
+                arr_push(tokens, lexer_create_token("EQUAL_EQUAL", "==", line));
+                i = i + 2;
+            } else {
+                arr_push(tokens, lexer_create_token("EQUAL", "=", line));
+                i = i + 1;
+            }
+        } else if ch == "!" {
+            if i + 1 < len && str_sub(source, i + 1, 1) == "=" {
+                arr_push(tokens, lexer_create_token("BANG_EQUAL", "!=", line));
+                i = i + 2;
+            } else {
+                arr_push(tokens, lexer_create_token("BANG", "!", line));
+                i = i + 1;
+            }
+        } else if ch == "<" {
+            if i + 1 < len && str_sub(source, i + 1, 1) == "=" {
+                arr_push(tokens, lexer_create_token("LESS_EQUAL", "<=", line));
+                i = i + 2;
+            } else {
+                arr_push(tokens, lexer_create_token("LESS", "<", line));
+                i = i + 1;
+            }
+        } else if ch == ">" {
+            if i + 1 < len && str_sub(source, i + 1, 1) == "=" {
+                arr_push(tokens, lexer_create_token("GREATER_EQUAL", ">=", line));
+                i = i + 2;
+            } else {
+                arr_push(tokens, lexer_create_token("GREATER", ">", line));
+                i = i + 1;
+            }
+        } else if ch == "\"" {
+            // String Literals
+            var str_val = "";
+            i = i + 1;
+            while i < len && str_sub(source, i, 1) != "\"" {
+                if str_sub(source, i, 1) == "\n" { line = line + 1; }
+                str_val = str_val + str_sub(source, i, 1);
+                i = i + 1;
+            }
+            if i < len { i = i + 1; } // Skip closing quote
+            arr_push(tokens, lexer_create_token("STRING", str_val, line));
+        } else if lexer_is_digit(ch) {
+            // Number Literals
+            var num_str = "";
+            while i < len && (lexer_is_digit(str_sub(source, i, 1)) || str_sub(source, i, 1) == ".") {
+                num_str = num_str + str_sub(source, i, 1);
+                i = i + 1;
+            }
+            arr_push(tokens, lexer_create_token("NUMBER", num_str, line));
+        } else if lexer_is_alpha(ch) {
+            // Identifiers and Keywords
+            var ident = "";
+            while i < len && lexer_is_alnum(str_sub(source, i, 1)) {
+                ident = ident + str_sub(source, i, 1);
+                i = i + 1;
+            }
+
+            var type_name = "IDENTIFIER";
+            if ident == "var" { type_name = "VAR"; }
+            else if ident == "fn" { type_name = "FN"; }
+            else if ident == "if" { type_name = "IF"; }
+            else if ident == "else" { type_name = "ELSE"; }
+            else if ident == "while" { type_name = "WHILE"; }
+            else if ident == "return" { type_name = "RETURN"; }
+            else if ident == "struct" { type_name = "STRUCT"; }
+            else if ident == "import" { type_name = "IMPORT"; }
+            else if ident == "true" { type_name = "TRUE"; }
+            else if ident == "false" { type_name = "FALSE"; }
+            else if ident == "nil" { type_name = "NIL"; }
+
+            arr_push(tokens, lexer_create_token(type_name, ident, line));
+        } else {
+            // Unknown character, skip
+            i = i + 1;
+        }
+    }
+
+    arr_push(tokens, lexer_create_token("EOF", "", line));
+    return tokens;
+}

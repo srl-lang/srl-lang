@@ -4,7 +4,9 @@
 #include "srl_sys.hpp"
 #include "vm.hpp"
 #include <iostream>
+#include <fstream>
 #include <sstream>
+
 #include <cstdlib>
 #include <thread>
 #include <array>
@@ -102,7 +104,36 @@ void SYS::registerNativeFunctions(VM& vm) {
         std::error_code ec;
         return Value(std::filesystem::current_path(ec).string());
     });
+
+    // sys_read_file(path)
+    vm.defineNative("sys_read_file", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::string path = args[0].asString();
+            std::ifstream file(path);
+            if (file.is_open()) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                return Value(buffer.str());
+            }
+        }
+        return Value("");
+    });
+
+    // sys_write_file(path, content)
+    vm.defineNative("sys_write_file", [](int argCount, const Value* args) -> Value {
+        if (argCount >= 2 && args[0].isString() && args[1].isString()) {
+            std::string path = args[0].asString();
+            std::string content = args[1].asString();
+            std::ofstream file(path);
+            if (file.is_open()) {
+                file << content;
+                return Value(true);
+            }
+        }
+        return Value(false);
+    });
 }
+
 
 } // namespace srl
 

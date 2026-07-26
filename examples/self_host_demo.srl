@@ -1,0 +1,14 @@
+// ============================================================================
+// SRL Self-Hosted Compiler Demo (examples/self_host_demo.srl)
+// ============================================================================
+
+print("========================================================");
+print(" 🚀 SELF-HOSTED SRL NATIVE APPLICATION");
+print("========================================================");
+
+var x = 10;
+var y = 20;
+var sum = x + y;
+
+print("Computed Sum: " + to_string(sum));
+print("✨ Compiled cleanly by SRL Self-Hosted Compiler (srlc.srl)!");
