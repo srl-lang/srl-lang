@@ -1,95 +1,121 @@
-# SRL - Serial Run Language 🚀
+# SRL (Serial Run Language)
 
-**SRL (Serial Run Language)** is a high-performance, lightweight hybrid programming language designed for **Digital Signal Processing (DSP)**, **Real-Time Audio Analysis (FFT)**, **Live Hot-Reloading**, and **Standalone Native Code Generation**.
+**SRL (Serial Run Language)** is a high-performance, lightweight hybrid programming language designed for **Digital Signal Processing (DSP)**, **Real-Time Audio Analysis (FFT)**, **Self-Hosted LLVM Compilation**, **Live Hot-Reloading**, and **System Tooling**.
 
-Featuring a C/Lua hybrid syntax, a fast C++ Bytecode VM, and a unified CLI toolchain (`srl run`, `srl build`, `srl watch`), SRL combines developer agility with low-level execution speed.
-
----
-
-## ✨ Key Features
-
-- **⚡ Unified CLI Toolchain:** Run scripts, build standalone executables, or launch live hot-reloaders with simple commands (`srl run`, `srl build`, `srl watch`).
-- **🔥 Live Code Hot-Reloading with State Retention:** Modify `.srl` scripts on-the-fly while preserving runtime variable states. Perfect for live audio synthesis, game loops, and real-time monitoring.
-- **🎵 Built-in DSP & FFT Engine:** Native Fourier Transforms (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), low-pass IIR filtering, and ASCII waveform terminal plotting (`dsp_plot`).
-- **🧩 C++ Structs & Lua Metatables:** Combine C++ style struct definitions (`struct Vector2 { x, y }`) with Lua-style prototype inheritance and metamethods (`setmetatable`, `__index`, `__add`).
-- **⚡ Standalone LLVM IR Compiler (`srlc`):** Compile `.srl` source code directly to LLVM IR (`.ll`) and standalone native x86_64 executable binaries without VM overhead.
-- **🖥️ Interactive TUI Engine:** Built-in Terminal User Interface primitives (`tui_box`, `tui_progress`, `tui_color`, `tui_get_key`).
-- **🎨 VS Code Extension:** Full syntax highlighting, snippet integration, and customized file icons (`srl-language-support-0.1.0.vsix`).
+Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hosted compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
 ---
 
-## 🛠️ CLI Usage Guide
+## Core Capabilities
 
-### 1. Run a Script (Interpreter Mode)
+- **Self-Hosted Compiler (`srlc.srl`):** Fully bootstrapped compiler written in SRL that parses source code, constructs ASTs, and generates standalone x86_64 LLVM IR assembly (`.ll`).
+- **Package Manager (`srl pm`):** Built-in package initialization (`srl init`) and GitHub library installation (`srl install user/repo`) into `srl_modules/`.
+- **Live Code Hot-Reloading:** Modify `.srl` scripts on-the-fly while preserving runtime variable states. Ideal for live audio synthesis and real-time monitoring.
+- **Built-in DSP & FFT Engine:** Native Fast Fourier Transform (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), IIR filtering, and ASCII waveform plotting (`dsp_plot`).
+- **Standard Library Suite:** Modular standard kütüphane components for vectors & 3D math (`std/math.srl`), REST HTTP requests (`std/http.srl`), assertions & testing (`std/testing.srl`), and OS environment utilities (`std/env.srl`).
+- **Testing & Benchmarking:** Integrated unit test runner (`srl test`) and microsecond-precision benchmark engine (`srl bench`).
+- **Structs & Metatables:** C-style struct definitions combined with Lua-style prototype inheritance and metamethod fallbacks.
+
+---
+
+## CLI Usage Guide
+
+### 1. Run Script (Bytecode VM)
 
 ```bash
-srl run examples/dsp_demo.srl
+srl run examples/package_demo.srl
 ```
 
-### 2. Live Hot-Reloading Mode (Watch Mode)
+### 2. Self-Hosted Compiler Mode
 
 ```bash
-srl watch examples/live_demo.srl
+srl compile examples/self_host_demo.srl -o self_demo.exe
 ```
 
-### 3. Build a Standalone Native Executable (Compiler Mode)
+### 3. Run Unit Test Suite
 
 ```bash
-srl build examples/dsp_demo.srl -o dsp_demo.exe
+srl test examples/math.test.srl
+```
+
+### 4. Benchmark Script Performance
+
+```bash
+srl bench examples/package_demo.srl
+```
+
+### 5. Live Hot-Reloading Mode
+
+```bash
+srl watch examples/dsp_demo.srl
+```
+
+### 6. Initialize Package
+
+```bash
+srl init my_srl_app
 ```
 
 ---
 
-## 🚀 Quickstart Code Examples
+## Code Examples
 
 ### 1. Audio Signal Generation & Fast Fourier Transform (FFT)
 
 ```srl
-// Generating 440 Hz Sine wave
 var sample_rate = 8000;
 var num_samples = 64;
 var signal = dsp_sine(440, sample_rate, num_samples);
 
 // ASCII Waveform Plot in Terminal
-dsp_plot(signal, 8, "440Hz Sine Input Waveform");
+dsp_plot(signal, 8, "440Hz Sine Waveform");
 
 // Compute Fast Fourier Transform
 var fft_res = dsp_fft(signal);
 var mag = dsp_magnitude(fft_res["real"], fft_res["imag"]);
-dsp_plot(mag, 8, "Frequency Spectrum Magnitude");
+dsp_plot(mag, 8, "Frequency Spectrum");
 ```
 
-### 2. C++ Structs & Lua Metatables
+### 2. Math & Vector Operations
 
 ```srl
-// C++ Style Struct Declaration
+import("std/math.srl");
+
+var v1 = vec2(3, 4);
+var v2 = vec2(1, 2);
+var v_sum = vec2_add(v1, v2);
+
+print("Vector 1 Length: " + to_string(vec2_length(v1)));
+print("Vector Sum: (" + to_string(map_get(v_sum, "x")) + ", " + to_string(map_get(v_sum, "y")) + ")");
+```
+
+### 3. Structs & Metatable Prototypes
+
+```srl
 struct Point3D { x, y, z }
 
 var p1 = Point3D(10, 20, 30);
-print("Point coordinates: x=" + to_string(map_get(p1, "x")) + ", z=" + to_string(map_get(p1, "z")));
+print("Point x: " + to_string(map_get(p1, "x")));
 
-// Lua Style Metatable Fallback
 var Prototype = map_new();
 map_set(Prototype, "tag", "SRL_NATIVE_OBJECT");
 
 var meta = map_new();
 map_set(meta, "__index", Prototype);
-
 setmetatable(p1, meta);
-print("Inherited Prototype Tag: " + to_string(map_get(p1, "tag")));
 ```
 
 ---
 
-## 📦 VS Code Extension
+## VS Code Extension
 
-Install the SRL language support extension located in `srl-vscode-extension`:
+Language support extension located in `srl-vscode-extension`:
 - Syntax Highlighting (`.srl`)
 - Snippet Auto-completion
-- `.vsix` pre-packaged bundle included!
+- `.vsix` pre-packaged installer bundle included
 
 ---
 
-## 📜 License
+## License
 
-Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for more information.
+Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for details.
