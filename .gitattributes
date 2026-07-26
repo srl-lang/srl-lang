@@ -1,17 +1,11 @@
-# Exclude infrastructure, runtime, and shell scripts from language stats
-src/** linguist-vendored=true
-include/** linguist-vendored=true
-srlc/** linguist-vendored=true
+# Exclude build artifacts and wrapper scripts from language stats
 build/** linguist-vendored=true
-CMakeLists.txt linguist-vendored=true
-
-# Exclude batch and shell wrapper scripts
+srlc/build/** linguist-vendored=true
 *.bat linguist-vendored=true
 *.sh linguist-vendored=true
 *.vcxproj linguist-vendored=true
 *.filters linguist-vendored=true
 
-# SRL language configuration
-*.srl linguist-language=SRL
+# Enable syntax highlighting & detection for SRL source files
+*.srl linguist-language=C++
 *.srl linguist-detectable=true
-*.srl linguist-syntax=cpp
