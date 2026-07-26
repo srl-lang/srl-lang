@@ -1,0 +1,30 @@
+// ============================================================================
+// SRL Standard Library - HTTP & REST Client Engine (std/http.srl)
+// ============================================================================
+
+import("std/net.srl");
+
+// --- HTTP Request Client Helpers ---
+
+fn http_request(method, url, headers_map, body_str) {
+    if method == "GET" {
+        return net_http_get(url);
+    }
+    if method == "POST" {
+        return net_http_post(url, body_str);
+    }
+    return nil;
+}
+
+fn http_get_json(url) {
+    var raw_resp = net_http_get(url);
+    if raw_resp == nil { return nil; }
+    return json_decode(raw_resp);
+}
+
+fn http_post_json(url, data_map) {
+    var json_payload = json_encode(data_map);
+    var raw_resp = net_http_post(url, json_payload);
+    if raw_resp == nil { return nil; }
+    return json_decode(raw_resp);
+}

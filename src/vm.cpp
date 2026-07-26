@@ -738,19 +738,46 @@ void VM::registerNativeFunctions() {
         return Value(false);
     });
 
-    // --- Module Import ---
+    // --- Module Import with Smart Resolution ---
     defineNative("import", [this](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
-            std::string path = args[0].asString();
-            if (loadedModules_.count(path) > 0) {
+            std::string reqPath = args[0].asString();
+            namespace fs = std::filesystem;
+
+            std::vector<std::string> candidates = {
+                reqPath,
+                reqPath + ".srl",
+                (fs::path("srl_modules") / reqPath).string(),
+                (fs::path("srl_modules") / reqPath / "main.srl").string(),
+                (fs::path("srl_modules") / reqPath / "index.srl").string(),
+                (fs::path("srl_modules") / (reqPath + ".srl")).string(),
+                (fs::path("std") / reqPath).string(),
+                (fs::path("std") / (reqPath + ".srl")).string()
+            };
+
+            std::string resolvedPath = "";
+            for (const auto& cand : candidates) {
+                if (fs::exists(cand) && !fs::is_directory(cand)) {
+                    resolvedPath = cand;
+                    break;
+                }
+            }
+
+            if (resolvedPath.empty()) {
+                std::cerr << "[VM Error] Import module not found: " << reqPath << std::endl;
+                return Value(false);
+            }
+
+            if (loadedModules_.count(resolvedPath) > 0) {
                 return Value(true); // Already imported
             }
-            loadedModules_.insert(path);
-            InterpretResult res = this->interpretFile(path);
+            loadedModules_.insert(resolvedPath);
+            InterpretResult res = this->interpretFile(resolvedPath);
             return Value(res == InterpretResult::INTERPRET_OK);
         }
         return Value(false);
     });
+
 }
 
 InterpretResult VM::interpretFile(const std::string& filepath) {
@@ -806,6 +833,11 @@ InterpretResult VM::interpret(const std::string& source) {
         scriptFn->name = "main_script";
         scriptFn->arity = 0;
 
+        size_t initialDepth = frames_.size();
+
+        // Push script function object onto stack so OP_RETURN unwinds cleanly
+        push(Value(scriptFn));
+
         // Execute top level script
         CallFrame frame;
         frame.function = scriptFn;
@@ -814,7 +846,9 @@ InterpretResult VM::interpret(const std::string& source) {
         frame.stackOffset = stack_.size();
         frames_.push_back(frame);
 
-        return run();
+        return run(initialDepth);
+
+
     } catch (const std::exception& e) {
         std::cerr << "[VM Error] " << e.what() << std::endl;
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -839,18 +873,17 @@ InterpretResult VM::runFunction(const std::string& fnName) {
     return InterpretResult::INTERPRET_OK;
 }
 
-InterpretResult VM::run() {
-    CallFrame* frame = &frames_.back();
+InterpretResult VM::run(size_t targetFrameDepth) {
 
-    #define READ_BYTE() (frame->chunk->code[frame->ip++])
-    #define READ_CONSTANT() (frame->chunk->constants[READ_BYTE()])
-    #define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->chunk->code[frame->ip - 2] << 8) | frame->chunk->code[frame->ip - 1]))
+    #define CURR_FRAME (frames_.back())
+    #define READ_BYTE() (CURR_FRAME.chunk->code[CURR_FRAME.ip++])
+    #define READ_CONSTANT() (CURR_FRAME.chunk->constants[READ_BYTE()])
+    #define READ_SHORT() (CURR_FRAME.ip += 2, (uint16_t)((CURR_FRAME.chunk->code[CURR_FRAME.ip - 2] << 8) | CURR_FRAME.chunk->code[CURR_FRAME.ip - 1]))
 
     while (true) {
-        if (frame->ip >= frame->chunk->code.size()) {
+        if (CURR_FRAME.ip >= CURR_FRAME.chunk->code.size()) {
             frames_.pop_back();
-            if (frames_.empty()) return InterpretResult::INTERPRET_OK;
-            frame = &frames_.back();
+            if (frames_.size() == targetFrameDepth) return InterpretResult::INTERPRET_OK;
             continue;
         }
 
@@ -893,61 +926,55 @@ InterpretResult VM::run() {
 
             case OpCode::OP_GET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                push(stack_[frame->stackOffset + slot]);
+                push(stack_[CURR_FRAME.stackOffset + slot]);
                 break;
             }
 
             case OpCode::OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                stack_[frame->stackOffset + slot] = peek(0);
+                stack_[CURR_FRAME.stackOffset + slot] = peek(0);
                 break;
             }
 
             case OpCode::OP_EQUAL: {
                 Value b = pop();
                 Value a = pop();
-                push(Value(a.equals(b)));
+                push(Value(a == b));
                 break;
             }
 
             case OpCode::OP_GREATER: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(a.asNumber() > b.asNumber()));
-                } else {
-                    push(Value(false));
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
+                push(Value(a.asNumber() > b.asNumber()));
                 break;
             }
 
             case OpCode::OP_LESS: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(a.asNumber() < b.asNumber()));
-                } else {
-                    push(Value(false));
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
+                push(Value(a.asNumber() < b.asNumber()));
                 break;
             }
 
             case OpCode::OP_ADD: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
+                if (a.isString() || b.isString()) {
+                    push(Value(a.asString() + b.asString()));
+                } else if (a.isNumber() && b.isNumber()) {
                     push(Value(a.asNumber() + b.asNumber()));
-                } else if (a.isString() || b.isString()) {
-                    push(Value(a.toString() + b.toString()));
                 } else {
-                    Value mm = getMetamethod(a, "__add");
-                    if (mm.isNil()) mm = getMetamethod(b, "__add");
-                    if (mm.isNativeFn()) {
-                        Value args[2] = {a, b};
-                        push(mm.asNativeFn()(2, args));
-                    } else {
-                        push(Value(0.0));
-                    }
+                    std::cerr << "[Runtime Error] Operands must be numbers or strings." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 break;
             }
@@ -955,58 +982,37 @@ InterpretResult VM::run() {
             case OpCode::OP_SUBTRACT: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(a.asNumber() - b.asNumber()));
-                } else {
-                    Value mm = getMetamethod(a, "__sub");
-                    if (mm.isNil()) mm = getMetamethod(b, "__sub");
-                    if (mm.isNativeFn()) {
-                        Value args[2] = {a, b};
-                        push(mm.asNativeFn()(2, args));
-                    } else {
-                        push(Value(0.0));
-                    }
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
+                push(Value(a.asNumber() - b.asNumber()));
                 break;
             }
 
             case OpCode::OP_MULTIPLY: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(a.asNumber() * b.asNumber()));
-                } else {
-                    Value mm = getMetamethod(a, "__mul");
-                    if (mm.isNil()) mm = getMetamethod(b, "__mul");
-                    if (mm.isNativeFn()) {
-                        Value args[2] = {a, b};
-                        push(mm.asNativeFn()(2, args));
-                    } else {
-                        push(Value(0.0));
-                    }
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
+                push(Value(a.asNumber() * b.asNumber()));
                 break;
             }
 
             case OpCode::OP_DIVIDE: {
                 Value b = pop();
                 Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    if (b.asNumber() == 0) {
-                        std::cerr << "[Runtime Error] Division by zero." << std::endl;
-                        return InterpretResult::INTERPRET_RUNTIME_ERROR;
-                    }
-                    push(Value(a.asNumber() / b.asNumber()));
-                } else {
-                    Value mm = getMetamethod(a, "__div");
-                    if (mm.isNil()) mm = getMetamethod(b, "__div");
-                    if (mm.isNativeFn()) {
-                        Value args[2] = {a, b};
-                        push(mm.asNativeFn()(2, args));
-                    } else {
-                        push(Value(0.0));
-                    }
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
+                if (b.asNumber() == 0) {
+                    std::cerr << "[Runtime Error] Division by zero." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                push(Value(a.asNumber() / b.asNumber()));
                 break;
             }
 
@@ -1033,21 +1039,21 @@ InterpretResult VM::run() {
 
             case OpCode::OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip += offset;
+                CURR_FRAME.ip += offset;
                 break;
             }
 
             case OpCode::OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
                 if (!peek(0).isTruthy()) {
-                    frame->ip += offset;
+                    CURR_FRAME.ip += offset;
                 }
                 break;
             }
 
             case OpCode::OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip -= offset;
+                CURR_FRAME.ip -= offset;
                 break;
             }
 
@@ -1083,7 +1089,6 @@ InterpretResult VM::run() {
                     newFrame.ip = 0;
                     newFrame.stackOffset = stack_.size() - argCount;
                     frames_.push_back(newFrame);
-                    frame = &frames_.back();
                 } else {
                     std::cerr << "[Runtime Error] Can only call functions." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -1093,7 +1098,7 @@ InterpretResult VM::run() {
 
             case OpCode::OP_RETURN: {
                 Value result = pop();
-                size_t offset = frame->stackOffset;
+                size_t offset = CURR_FRAME.stackOffset;
                 frames_.pop_back();
 
                 // Unwind arguments and function object from stack
@@ -1104,17 +1109,18 @@ InterpretResult VM::run() {
                     stack_.pop_back(); // pop function callee
                 }
 
-                if (frames_.empty()) {
+                if (frames_.size() == targetFrameDepth) {
                     push(result);
                     return InterpretResult::INTERPRET_OK;
                 }
-                frame = &frames_.back();
+
                 push(result);
                 break;
             }
         }
     }
 
+    #undef CURR_FRAME
     #undef READ_BYTE
     #undef READ_CONSTANT
     #undef READ_SHORT

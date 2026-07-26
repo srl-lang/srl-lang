@@ -1,0 +1,81 @@
+// ============================================================================
+// SRL Standard Library - Unit Testing & Assertion Framework (std/testing.srl)
+// ============================================================================
+
+var __test_total_count = 0;
+var __test_passed_count = 0;
+var __test_failed_count = 0;
+
+fn __test_log_pass(name) {
+    __test_total_count = __test_total_count + 1;
+    __test_passed_count = __test_passed_count + 1;
+    print("  [PASS] " + name);
+}
+
+fn __test_log_fail(name, reason) {
+    __test_total_count = __test_total_count + 1;
+    __test_failed_count = __test_failed_count + 1;
+    print("  [FAIL] " + name + " -> Reason: " + reason);
+}
+
+fn assert_eq(actual, expected, test_name) {
+    if actual == expected {
+        __test_log_pass(test_name);
+    } else {
+        var reason = "Expected " + to_string(expected) + " but got " + to_string(actual);
+        __test_log_fail(test_name, reason);
+    }
+}
+
+fn assert_neq(actual, expected, test_name) {
+    if actual != expected {
+        __test_log_pass(test_name);
+    } else {
+        var reason = "Expected value NOT to equal " + to_string(expected);
+        __test_log_fail(test_name, reason);
+    }
+}
+
+fn assert_true(condition, test_name) {
+    if condition == true {
+        __test_log_pass(test_name);
+    } else {
+        __test_log_fail(test_name, "Expected condition to be true");
+    }
+}
+
+fn assert_false(condition, test_name) {
+    if condition == false {
+        __test_log_pass(test_name);
+    } else {
+        __test_log_fail(test_name, "Expected condition to be false");
+    }
+}
+
+fn assert_nil(val, test_name) {
+    if val == nil {
+        __test_log_pass(test_name);
+    } else {
+        __test_log_fail(test_name, "Expected value to be nil");
+    }
+}
+
+fn test_suite(suite_name) {
+    print("\n========================================================");
+    print(" 🧪 RUNNING TEST SUITE: " + suite_name);
+    print("========================================================");
+}
+
+fn test_summary() {
+    print("\n--------------------------------------------------------");
+    print(" 📊 TEST RESULTS:");
+    print("  Total Tests  : " + to_string(__test_total_count));
+    print("  Passed Tests : " + to_string(__test_passed_count));
+    print("  Failed Tests : " + to_string(__test_failed_count));
+    print("--------------------------------------------------------\n");
+    if __test_failed_count == 0 {
+        print("🎉 ALL TESTS PASSED SUCCESSFULLY!\n");
+    } else {
+        print("❌ TEST SUITE FAILED WITH " + to_string(__test_failed_count) + " ERRORS.\n");
+    }
+}

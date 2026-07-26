@@ -44,10 +44,11 @@ private:
     Value pop();
     Value peek(int distance = 0) const;
 
-    InterpretResult run();
+    InterpretResult run(size_t targetFrameDepth = 0);
 
     void registerNativeFunctions();
 };
+
 
 } // namespace srl
 

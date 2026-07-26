@@ -1,0 +1,112 @@
+// ============================================================================
+// SRL Standard Library - Math & Vector Engine (std/math.srl)
+// ============================================================================
+
+// --- Constants ---
+var PI = 3.14159265358979323846;
+var E  = 2.71828182845904523536;
+
+// --- Basic Math Helpers ---
+fn clamp(val, min_val, max_val) {
+    if val < min_val { return min_val; }
+    if val > max_val { return max_val; }
+    return val;
+}
+
+fn lerp(a, b, t) {
+    return a + (b - a) * t;
+}
+
+fn map_range(val, in_min, in_max, out_min, out_max) {
+    return out_min + (val - in_min) * (out_max - out_min) / (in_max - in_min);
+}
+
+fn deg2rad(deg) {
+    return deg * (PI / 180.0);
+}
+
+fn rad2deg(rad) {
+    return rad * (180.0 / PI);
+}
+
+// --- 2D Vector Helpers ---
+fn vec2(x, y) {
+    var v = map_new();
+    map_set(v, "x", x);
+    map_set(v, "y", y);
+    return v;
+}
+
+fn vec2_add(v1, v2) {
+    return vec2(map_get(v1, "x") + map_get(v2, "x"), map_get(v1, "y") + map_get(v2, "y"));
+}
+
+fn vec2_sub(v1, v2) {
+    return vec2(map_get(v1, "x") - map_get(v2, "x"), map_get(v1, "y") - map_get(v2, "y"));
+}
+
+fn vec2_scale(v, s) {
+    return vec2(map_get(v, "x") * s, map_get(v, "y") * s);
+}
+
+fn vec2_dot(v1, v2) {
+    return (map_get(v1, "x") * map_get(v2, "x")) + (map_get(v1, "y") * map_get(v2, "y"));
+}
+
+fn vec2_length(v) {
+    var x = map_get(v, "x");
+    var y = map_get(v, "y");
+    return math_sqrt((x * x) + (y * y));
+}
+
+fn vec2_normalize(v) {
+    var len = vec2_length(v);
+    if len == 0 { return vec2(0, 0); }
+    return vec2_scale(v, 1.0 / len);
+}
+
+// --- 3D Vector Helpers ---
+fn vec3(x, y, z) {
+    var v = map_new();
+    map_set(v, "x", x);
+    map_set(v, "y", y);
+    map_set(v, "z", z);
+    return v;
+}
+
+fn vec3_add(v1, v2) {
+    return vec3(
+        map_get(v1, "x") + map_get(v2, "x"),
+        map_get(v1, "y") + map_get(v2, "y"),
+        map_get(v1, "z") + map_get(v2, "z")
+    );
+}
+
+fn vec3_sub(v1, v2) {
+    return vec3(
+        map_get(v1, "x") - map_get(v2, "x"),
+        map_get(v1, "y") - map_get(v2, "y"),
+        map_get(v1, "z") - map_get(v2, "z")
+    );
+}
+
+fn vec3_cross(v1, v2) {
+    var x1 = map_get(v1, "x"); var y1 = map_get(v1, "y"); var z1 = map_get(v1, "z");
+    var x2 = map_get(v2, "x"); var y2 = map_get(v2, "y"); var z2 = map_get(v2, "z");
+    return vec3(
+        (y1 * z2) - (z1 * y2),
+        (z1 * x2) - (x1 * z2),
+        (x1 * y2) - (y1 * x2)
+    );
+}
+
+fn vec3_dot(v1, v2) {
+    return (map_get(v1, "x") * map_get(v2, "x")) +
+           (map_get(v1, "y") * map_get(v2, "y")) +
+           (map_get(v1, "z") * map_get(v2, "z"));
+}
+
+fn vec3_length(v) {
+    var x = map_get(v, "x"); var y = map_get(v, "y"); var z = map_get(v, "z");
+    return math_sqrt((x * x) + (y * y) + (z * z));
+}

@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <thread>
 #include <array>
+#include <filesystem>
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -83,6 +85,24 @@ void SYS::registerNativeFunctions(VM& vm) {
         return Value(0.0);
 #endif
     });
+
+    // sys_os()
+    vm.defineNative("sys_os", [](int argCount, const Value* args) -> Value {
+#ifdef _WIN32
+        return Value("Windows");
+#elif __APPLE__
+        return Value("macOS");
+#else
+        return Value("Linux");
+#endif
+    });
+
+    // sys_pwd()
+    vm.defineNative("sys_pwd", [](int argCount, const Value* args) -> Value {
+        std::error_code ec;
+        return Value(std::filesystem::current_path(ec).string());
+    });
 }
 
 } // namespace srl
+
