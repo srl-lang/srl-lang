@@ -1,0 +1,6 @@
+# GitHub Linguist Language & Syntax Overrides for SRL (Serial Run Language)
+*.srl linguist-language=SRL
+*.srl linguist-detectable=true
+
+# Fallback syntax highlighting for GitHub code viewer (C/Lua hybrid syntax)
+*.srl linguist-syntax=cpp
