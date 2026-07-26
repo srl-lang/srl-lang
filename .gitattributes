@@ -1,6 +1,11 @@
-# GitHub Linguist Language & Syntax Overrides for SRL (Serial Run Language)
+# Exclude C++ bootstrap runtime from language stats so GitHub shows SRL as primary language
+src/** linguist-vendored=true
+include/** linguist-vendored=true
+srlc/** linguist-vendored=true
+build/** linguist-vendored=true
+CMakeLists.txt linguist-vendored=true
+
+# SRL is the primary language
 *.srl linguist-language=SRL
 *.srl linguist-detectable=true
-
-# Fallback syntax highlighting for GitHub code viewer (C/Lua hybrid syntax)
 *.srl linguist-syntax=cpp
