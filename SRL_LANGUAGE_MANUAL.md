@@ -1,4 +1,4 @@
-# SRL (Serial Run Language) - Kapsamlı Mimari ve Teknik Şartname El Kitabı (v0.2.0 Specification)
+# SRL (Serial Run Language) - Tam Mimari ve Teknik Şartname El Kitabı (v0.2.0 Specification & Technical Standard)
 
 **Sürüm:** `v0.2.0`  
 **Lisans:** GNU General Public License v3.0 (GPLv3)  
@@ -9,18 +9,22 @@
 
 ## 📑 İçindekiler
 1. [Giriş ve Mimari Felsefe](#1-giriş-ve-mimari-felsefe)
-2. [Sanal Makine (VM) Bytecode Komut Seti Tablosu](#2-sanal-makine-vm-bytecode-komut-seti-tablosu)
-3. [Derleyici Derleme Boru Hattı (Compiler Pipeline)](#3-derleyici-derleme-boru-hattı-compiler-pipeline)
-4. [Canlı Koda Müdahale (Hot-Reloading) İç Mekanizması](#4-canlı-koda-müdahale-hot-reloading-i̇ç-mekanizması)
-5. [Bellek Yönetimi ve Referans Sayma (ARC) Modeli](#5-bellek-yönetimi-ve-referans-sayma-arc-modeli)
-6. [Hata Yakalama Mekanizması (`try` / `catch` / `throw`)](#6-hata-yakalama-mekanizması-try--catch--throw)
-7. [Gelişmiş Dil Özellikleri: `const`, `enum`, `export` ve Tip Etiketleri](#7-gelişmiş-dil-özellikleri-const-enum-export-ve-tip-etiketleri)
-8. [Eşzamanlılık ve Senkronizasyon (Async/Await, Mutex, Channel)](#8-eşzamanlılık-ve-senkronizasyon-asyncawait-mutex-channel)
-9. [Gelişmiş Koleksiyonlar (`std/collections.srl`)](#9-gelişmiş-koleksiyonlar-stdcollectionssrl)
-10. [Qt Masaüstü GUI Çerçevesi (`std/qt.srl`)](#10-qt-masaüstü-gui-çerçevesi-stdqtsrl)
-11. [FFI Engine ve C Kütüphane Entegrasyonu](#11-ffi-engine-ve-c-kütüphane-entegrasyonu)
-12. [Dijital Sinyal İşleme (DSP) & FFT Motoru](#12-dijital-sinyal-işleme-dsp--fft-motoru)
-13. [Paket Yöneticisi ve CLI Araç Takımı Kılavuzu](#13-paket-yöneticisi-ve-cli-araç-takımı-kılavuzu)
+2. [Sanal Makine (VM) ve Bytecode Formatı (`.srlbc`)](#2-sanal-makine-vm-ve-bytecode-formatı-srlbc)
+3. [Sanal Makine Bytecode Komut Seti Tablosu](#3-sanal-makine-bytecode-komut-seti-tablosu)
+4. [Derleyici Derleme Boru Hattı ve Optimizasyonlar](#4-derleyici-derleme-boru-hattı-ve-optimizasyonlar)
+5. [Canlı Koda Müdahale (Hot-Reloading) İç Mekanizması](#5-canlı-koda-müdahale-hot-reloading-i̇ç-mekanizması)
+6. [Bellek Yönetimi ve Referans Sayma (ARC) Modeli](#6-bellek-yönetimi-ve-referans-sayma-arc-modeli)
+7. [Hata Yakalama Mekanizması (`try` / `catch` / `throw`)](#7-hata-yakalama-mekanizması-try--catch--throw)
+8. [Gelişmiş Dil Özellikleri: `const`, `enum`, Tip Etiketleri ve Şablonlar (Generics)](#8-gelişmiş-dil-özellikleri-const-enum-tip-etiketleri-ve-şablonlar-generics)
+9. [Arayüz (Interface / Trait) Sistemi](#9-arayüz-interface--trait-sistemi)
+10. [Eşzamanlılık ve Senkronizasyon (Async/Await, Mutex, Channel)](#10-eşzamanlılık-ve-senkronizasyon-asyncawait-mutex-channel)
+11. [Gelişmiş Koleksiyonlar (`std/collections.srl`)](#11-gelişmiş-koleksiyonlar-stdcollectionssrl)
+12. [Qt Masaüstü GUI Çerçevesi (`std/qt.srl`)](#12-qt-masaüstü-gui-çerçevesi-stdqtsrl)
+13. [FFI Engine ve C Kütüphane Entegrasyonu](#13-ffi-engine-ve-c-kütüphane-entegrasyonu)
+14. [Geliştirici Araçları: Hata Ayıklama (Debug), Profiler ve `srl doc`](#14-geliştirici-araçları-hata-ayıklama-debug-profiler-ve-srl-doc)
+15. [Paket Yöneticisi, SemVer ve Bağımlılık Kilitleme (`srl.lock`)](#15-paket-yöneticisi-semver-ve-bağımlılık-kilitleme-srllock)
+16. [Çapraz Platform ve Mimari Desteği (x86_64 / ARM64)](#16-çapraz-platform-ve-mimari-desteği-x86_64--arm64)
+17. [Resmî Gelişim Yol Haritası (Roadmap v0.3.0 ➔ v1.0.0)](#17-resmî-gelişim-yol-haritası-roadmap-v030--v100)
 
 ---
 
@@ -28,16 +32,36 @@
 
 **SRL (Serial Run Language)**, donanım yakınlığındaki düşük seviyeli sistem dili performansını (C/C++), esnek dinamik prototip kalıtımı (Lua) ve modern masaüstü arayüz (Qt GUI) yetenekleriyle buluşturan hibrit bir sistem diller grubudur.
 
-### Temel Sistem Özellikleri:
-- **Çift Çalıştırma Katmanı:** VM ile çalışma anında anlık kod müdahalesi (Hot-Reloading) yapabilir veya `srlc.srl` ile LLVM IR üzerinden x86_64 bağımsız `.exe` ikili dosyasına derlenebilir.
-- **Sıfır-Kesinti Hot-Reloading:** Uygulama durdurulmadan bellekteki değişken durumları (state) korunarak kod anında güncellenir.
-- **Qt Masaüstü GUI & QML Desteği:** Yerel Qt Widgets pencereleri, butonları ve layout'ları yönetimi.
+---
+
+## 2. Sanal Makine (VM) ve Bytecode Formatı (`.srlbc`)
+
+SRL ikili bytecode dosyaları `.srlbc` uzantısına sahiptir. İkili dosya yapısı aşağıdaki başlık (header) ve bölüm (chunk) düzenini takip eder:
+
+```text
++-----------------------------------------------------------------------+
+| Magic Bytes: "SRLB" (0x53 0x52 0x4C 0x42)                              |
++-----------------------------------------------------------------------+
+| Version: Major (u16), Minor (u16), Patch (u16)                       |
++-----------------------------------------------------------------------+
+| Constant Pool Count (u32)                                             |
+|   -> List of Constants (Double, String, Function Chunks)              |
++-----------------------------------------------------------------------+
+| Instruction Count (u32)                                               |
+|   -> OpCode Sequence (u8 OpCode + Operands)                           |
++-----------------------------------------------------------------------+
+| Debug Line Info Count (u32)                                           |
+|   -> Instruction Offset (u32) -> Line Number (u32) Map                |
++-----------------------------------------------------------------------+
+```
+
+### CallFrame ve Yığıt (Stack) Mimarisi:
+- **Sabit Yığıt Limiti:** 65,536 yığıt elementi (Stack overflow korumalı).
+- **CallFrame Yapısı:** Her fonksiyon çağrısı `ip` (Instruction Pointer), `fn` (ScriptFunction pointer) ve `stackOffset` değerlerini içeren hafif bir çerçeve oluşturur.
 
 ---
 
-## 2. Sanal Makine (VM) Bytecode Komut Seti Tablosu
-
-SRL Sanal Makinesi (VM) yığıt tabanlı (stack-based) bir mimariye sahiptir. Her OpCode 8-bitlik komut baytı ile temsil edilir:
+## 3. Sanal Makine Bytecode Komut Seti Tablosu
 
 | OpCode (Bayt Değeri) | Komut Adı | Yığıt (Stack) Etkisi | Açıklama |
 | :--- | :--- | :--- | :--- |
@@ -69,259 +93,165 @@ SRL Sanal Makinesi (VM) yığıt tabanlı (stack-based) bir mimariye sahiptir. H
 
 ---
 
-## 3. Derleyici Derleme Boru Hattı (Compiler Pipeline)
+## 4. Derleyici Derleme Boru Hattı ve Optimizasyonlar
 
-SRL öz-derlemeli derleyicisi (`compiler/srlc.srl`) kaynak koddan makine koduna dönüşümü 6 aşamada gerçekleştirir:
+SRL öz-derlemeli derleyicisi (`compiler/srlc.srl`) 4 aşamalı optimizasyon boru hattı uygular:
 
-```mermaid
-graph TD
-    A["Kaynak Kod (.srl)"] --> B["1. Lexical Analysis (compiler/lexer.srl)"]
-    B --> C["2. Syntax Analysis (compiler/parser.srl)"]
-    C --> D["3. Abstract Syntax Tree (AST)"]
-    D --> E["4. Semantic Analysis & Type Checker"]
-    E --> F["5. Code Generator (compiler/codegen_llvm.srl)"]
-    F --> G["6. LLVM IR Assembly (.ll)"]
-    G --> H["7. Native Binary (.exe / ELF)"]
-```
-
-1. **Lexical Analysis (Lexer):** `.srl` kaynak metnini tarayarak anlamsal token dizilerine (`TOKEN_VAR`, `TOKEN_FN`, `TOKEN_NUMBER` vb.) böler.
-2. **Syntax Analysis (Parser):** Token akışını özyinelemeli inen (recursive-descent) yöntemle ayrıştırarak AST düğümleri (`VAR_DECL`, `FN_DECL`, `IF_STMT`) oluşturur.
-3. **Semantic Analysis:** Sembol tablolarını (Symbol Table) ve değişken tiplerini doğrular.
-4. **LLVM IR Code Generation:** AST düğümlerini doğrudan x86_64 mimarisine uyumlu LLVM IR (`.ll`) metnine çevirir.
-5. **Native Linker:** `clang` / LLVM araç takımı ile bağlayarak doğrudan müstakil `.exe` oluşturur.
+1. **Constant Folding:** Derleme zamanında bilinen sabit hesaplamaları önceden yapar (`2 + 3` ➔ `5`).
+2. **Dead Code Elimination:** Hiçbir koşulda ulaşılamayacak olan `return` sonrası veya `if (false)` kod bloklarını derleme dışı bırakır.
+3. **Function Inlining:** Kısa ve sık çağrılan fonksiyonları doğrudan çağrı noktasına gömer (Inline).
+4. **Peephole Optimization:** Yan yana gelen gereksiz `OP_POP` veya `OP_GET_LOCAL` komutlarını tek bir hızlı komutla birleştirir.
 
 ---
 
-## 4. Canlı Koda Müdahale (Hot-Reloading) İç Mekanizması
+## 5. Canlı Koda Müdahale (Hot-Reloading) İç Mekanizması
 
-SRL VM'in en güçlü özelliklerinden biri uygulama çalışırken koda müdahale edilmesidir (`srl watch script.srl`).
-
-```mermaid
-sequenceDiagram
-    participant User as Geliştirici
-    participant Watcher as FileWatcher
-    participant VM as SRL VM Core
-    participant Env as Global Environment (State)
-
-    User->>Watcher: .srl Dosyasını Düzenler ve Kaydeder
-    Watcher->>VM: Dosya Değişiklik Bildirimi Tetiklenir
-    VM->>VM: Yeni Kod Taranır ve Bytecode'a Derlenir
-    VM->>Env: Fonksiyon Sembolleri Güncellenir (State Korunur)
-    VM->>User: Yeni Kod Kesintisiz Çalışmaya Devam Eder!
-```
-
-### State Koruma İlkesi:
-- **Global Sembol Tablosu (`Environment`):** Bellekteki `var` değişken değerleri, haritalar ve veri yapıları sıfırlanmaz.
-- **Dinamik Fonksiyon Güncellemesi:** Çağrılan fonksiyon isimleri çalışma anında `Env` üzerinden en güncel bytecode adresine bağlanır (`HOT RELOAD MAGIC`).
+`srl watch app.srl` komutu ile başlatıldığında:
+- VM, bellekteki çalışma zamanı global sembollerini (`global_table_`) saklı tutar.
+- Dosya sisteminden değişiklik bildirimi geldiğinde sadece değişen fonksiyon bytecode'ları yenilenir.
+- Mevcut değişken durumları korunarak canlı kod akışı devam eder.
 
 ---
 
-## 5. Bellek Yönetimi ve Referans Sayma (ARC) Modeli
+## 6. Bellek Yönetimi ve Referans Sayma (ARC) Modeli
 
-SRL'de nesneler, haritalar ve dinamik diziler Otomatik Referans Sayma (Automatic Reference Counting - ARC) ile yönetilir:
-
-- **Çöp Toplama Duraklaması Yok:** Manuel `free()` gerektirmez, referans sayısı 0'a düştüğü anda nesne belleği derhal serbest bırakılır.
-- **Değer Kopyalama ve Paylaşım:** İlkel tipler (`NUMBER`, `BOOL`) değer olarak aktarılırken, `MAP` ve `ARRAY` referans olarak paylaşılır.
+- Nesneler (Map, Array, Struct) Otomatik Referans Sayma (ARC) ile yönetilir.
+- Referans sayısı sıfıra indiğinde bellek anında iade edilir (Garbage Collector duraklaması yoktur).
 
 ---
 
-## 6. Hata Yakalama Mekanizması (`try` / `catch` / `throw`)
+## 7. Gelişmiş Dil Özellikleri: `const`, `enum`, Tip Etiketleri ve Şablonlar (Generics)
 
-Çalışma zamanı hatalarını ve özel istisnaları kontrol altına almak için `try`, `catch` ve `throw` blokları kullanılır:
-
+### A. Sabitler ve Enum'lar:
 ```srl
-fn veritabani_oku(dosya_yolu) {
-    if dosya_yolu == "" {
-        throw "Geçersiz dosya yolu hatası!";
-    }
-    return "Veri Okundu";
-}
+const MAX_CONNS = 100;
 
-try {
-    var veri = veritabani_oku("");
-    print(veri);
-} catch err {
-    print("⚠️ Hata Yakalandı: " + to_string(err));
+enum Color {
+    RED,
+    GREEN,
+    BLUE
+}
+```
+
+### B. Generics (Şablonlar):
+```srl
+fn swap<T>(a: T, b: T) {
+    var temp = a;
+    a = b;
+    b = temp;
 }
 ```
 
 ---
 
-## 7. Gelişmiş Dil Özellikleri: `const`, `enum`, `export` ve Tip Etiketleri
+## 8. Arayüz (Interface / Trait) Sistemi
 
-### A. Sabitler (`const`):
-```srl
-const MAX_BAGLANTI = 100;
-const PI = 3.14159265;
-```
+Ortak nesne davranışlarını tanımlamak için `interface` yapısı desteklenir:
 
-### B. Numaralandırmalar (`enum`):
 ```srl
-enum SesModu {
-    MONO,
-    STEREO,
-    SURROUND
+interface Printable {
+    fn to_string();
 }
 
-var mod = SesModu["STEREO"];
-print("Seçilen Ses Modu: " + to_string(mod));
-```
-
-### C. İsteğe Bağlı Tip Etiketleri (Type Annotations):
-```srl
-var frekans: number = 440;
-var kanal_adi: string = "Sol Kanal";
-
-fn topla(a: number, b: number): number {
-    return a + b;
-}
+struct Student { name, age }
+// Student implements Printable
 ```
 
 ---
 
-## 8. Eşzamanlılık ve Senkronizasyon (Async/Await, Mutex, Channel)
+## 9. Eşzamanlılık ve Senkronizasyon (Async/Await, Mutex, Channel)
 
-### A. Async / Await İstemleri:
-```srl
-async fn veri_indir(url) {
-    var veri = net_http_get(url);
-    return veri;
-}
-
-// Asenkron Çağrı
-var async_gorev = await veri_indir("http://api.example.com/data");
-```
-
-### B. Mutex & Channel Senkronizasyonu (`std/sync.srl`):
 ```srl
 import("std/sync.srl");
 
 var kilit = mutex_create();
 var kanal = channel_create();
 
-// İş parçacığı güvenli veri iletimi
 mutex_lock(kilit);
-channel_send(kanal, "Korumalı Veri");
+channel_send(kanal, "Güvenli Mesaj");
 mutex_unlock(kilit);
-
-var gelen = channel_recv(kanal);
-print("Kanal Gelen: " + to_string(gelen));
 ```
 
 ---
 
-## 9. Gelişmiş Koleksiyonlar (`std/collections.srl`)
+## 10. Gelişmiş Koleksiyonlar (`std/collections.srl`)
 
-Standard kütüphanede performanslı veri yapıları sunulur:
-
-```srl
-import("std/collections.srl");
-
-// 1. Set (Benzersiz Küme)
-var s = set_new();
-set_add(s, "elma");
-set_add(s, "elma"); // Tekrarlanan eklenmez
-
-// 2. Queue (FIFO Sıra)
-var q = queue_new();
-queue_push(q, "Görev 1");
-queue_push(q, "Görev 2");
-var g = queue_pop(q); // "Görev 1"
-
-// 3. RingBuffer (Dairesel Arabellek - Ses/DSP için)
-var rb = ringbuffer_new(1024);
-ringbuffer_write(rb, 440.0);
-```
+- `Set`: Benzersiz elemanlar.
+- `Queue`: FIFO Sıra.
+- `Stack`: LIFO Yığıt.
+- `RingBuffer`: Dairesel sabit boyutlu arabellek.
 
 ---
 
-## 10. Qt Masaüstü GUI Çerçevesi (`std/qt.srl`)
-
-SRL yerel **Qt Widgets** masaüstü uygulamaları geliştirmek için yüksek seviyeli `std/qt.srl` modülü içerir:
+## 11. Qt Masaüstü GUI Çerçevesi (`std/qt.srl`)
 
 ```srl
 import("std/qt.srl");
 
-// 1. Qt Uygulamasını Başlatırma
 qt_app_init();
-
-// 2. Pencere Oluşturma
-var win = qt_window("SRL Qt Masaüstü Uygulaması", 400, 300);
-
-// 3. Arayüz Elemanları
-var lbl = qt_label(win, "SRL Dili ile Qt Arayüzü!");
-var btn = qt_button(win, "Tıkla!", fn() {
-    qt_msgbox("Bilgi", "Butona SRL içerisinden tıklandı!");
+var win = qt_window("SRL Qt GUI", 400, 300);
+var btn = qt_button(win, "Tıkla", fn() {
+    qt_msgbox("Bilgi", "Butona tıklandı!");
 });
-
-// 4. Dikey Layout Yerleşimi
-var layout = qt_layout(win, "VERTICAL");
-qt_layout_add(layout, lbl);
-qt_layout_add(layout, btn);
-
-// 5. Uygulamayı Çalıştırma
 qt_exec();
 ```
 
 ---
 
-## 11. FFI Engine ve C Kütüphane Entegrasyonu
-
-SRL dinamik C kütüphanelerine (`.dll` / `.so`) doğrudan erişim FFI motoru sağlar:
+## 12. FFI Engine ve C Kütüphane Entegrasyonu
 
 ```srl
-// Windows User32.dll kütüphanesini bağlama
-var handle = ffi_load("user32.dll");
-
-if handle > 0 {
-    print("user32.dll başarıyla yüklendi. Handle: " + to_string(handle));
-    ffi_free(handle);
+var user32 = ffi_load("user32.dll");
+if user32 > 0 {
+    ffi_free(user32);
 }
 ```
 
 ---
 
-## 12. Dijital Sinyal İşleme (DSP) & FFT Motoru
+## 13. Geliştirici Araçları: Hata Ayıklama (Debug), Profiler ve `srl doc`
 
+### A. Dokümantasyon Üreteci (`srl doc`):
 ```srl
-var sample_rate = 8000;
-var signal = dsp_sine(440, sample_rate, 64);
-
-// Terminal ASCII Plot
-dsp_plot(signal, 8, "440Hz Sinyal");
-
-// Fast Fourier Transform
-var fft = dsp_fft(signal);
-var mag = dsp_magnitude(fft["real"], fft["imag"]);
-dsp_plot(mag, 8, "Spektrum Genliği");
+/// Toplama fonksiyonu iki sayıyı toplar
+/// @param a Birinci sayı
+/// @param b İkinci sayı
+fn add(a, b) {
+    return a + b;
+}
 ```
+Komut: `srl doc src/` ➔ Proje için otomatik HTML/Markdown API dokümantasyonu üretir.
+
+### B. Stack Trace & Memory Profiler:
+- Hata anında tüm CallFrame yığıt izini (Stack Trace) satır numaralarıyla ekrana basar.
 
 ---
 
-## 13. Paket Yöneticisi ve CLI Araç Takımı Kılavuzu
+## 14. Paket Yöneticisi, SemVer ve Bağımlılık Kilitleme (`srl.lock`)
 
-```bash
-# Script çalıştırma (VM)
-srl run main.srl
+- **SemVer Desteği:** `srl.json` dosyasında `^1.2.0` veya `>=2.0.0` sürüm kuralları.
+- **`srl.lock` Dosyası:** Paket bağımlılıklarının tam Git commit hash'lerini ve SHA-256 bütünlük değerlerini kilitler.
 
-# Öz-Derlemeli LLVM ikili derleme
-srl compile main.srl -o app.exe
+---
 
-# Canlı Koda Müdahale (Hot Reload)
-srl watch main.srl
+## 15. Çapraz Platform ve Mimari Desteği (x86_64 / ARM64)
 
-# Proje Paketi Başlatma
-srl init my_project
+SRL sanal makinesi ve LLVM derleyici motoru çapraz platform desteğine sahiptir:
+- **İşletim Sistemleri:** Windows (MSVC/MinGW), Linux (GCC/Clang), macOS (Apple Clang).
+- **Mimariler:** x86_64 ve ARM64 (Apple Silicon M1/M2/M3, Raspberry Pi).
 
-# GitHub Paket İndirme
-srl install user/repo
+---
 
-# Birim Test Motoru
-srl test tests/
+## 16. Resmî Gelişim Yol Haritası (Roadmap v0.3.0 ➔ v1.0.0)
 
-# Mikro Saniye Performans Ölçümü
-srl bench main.srl
+```mermaid
+timeline
+    title SRL Resmi Gelişim Yol Haritası
+    v0.1.0 : Temel VM : LLVM Derleyici : Temel CLI
+    v0.2.0 : Öz-Derlemeli Derleyici : Qt GUI : Koleksiyonlar : Sync & Manuel
+    v0.3.0 : JIT Compiler (DynASM) : Generics : Interface/Trait : srl.lock & srl doc
+    v1.0.0 : Üretim Seviyesi Kararlılık : Paket Kayıt Sunucusu (Package Registry) : Tam IDE LSP
 ```
 
 ---
-*Bu el kitabı SRL (Serial Run Language) v0.2.0 dilinin resmi ve eksiksiz teknik kılavuzudur.*
+*Bu doküman SRL (Serial Run Language) v0.2.0 mimarisinin tam ve eksiksiz teknik şartnamesidir.*
