@@ -1,0 +1,13 @@
+# Official GitHub Linguist Definition for SRL (Serial Run Language)
+# File target in github-linguist/linguist repository: lib/linguist/languages.yml
+
+SRL:
+  type: programming
+  color: "#00BFFF"
+  extensions:
+  - ".srl"
+  tm_scope: source.srl
+  ace_mode: c_cpp
+  codemirror_mode: clike
+  codemirror_mime_type: text/x-c++src
+  language_id: 8901234
