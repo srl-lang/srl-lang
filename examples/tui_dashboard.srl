@@ -1,0 +1,50 @@
+// Serial Run Language (.srl) Live TUI Dashboard Demo
+
+var progress = 0;
+var status = "System Active & Hot-Reloading";
+var task_count = 60;
+
+fn render_ui() {
+    tui_clear();
+    
+    // Main Panel Frame
+    tui_color("cyan");
+    tui_box(2, 5, 65, 16, "SRL LIVE TUI DASHBOARD");
+
+    // Server Info
+    tui_color("yellow");
+    tui_print(4, 9, "Engine Status: " + status);
+    tui_print(5, 9, "Active Threads: " + to_string(task_count));
+
+    // Live Progress Bar Component
+    tui_color("white");
+    tui_print(8, 9, "Self-Hosting Compiler Progress:");
+    tui_progress(10, 9, 40, progress);
+
+    // Live Instructions
+    tui_color("magenta");
+    tui_print(13, 9, "[LIVE] Hot-Reload Active! Modify tui_dashboard.srl live!");
+    tui_color("reset");
+    tui_print(15, 9, "Controls: Edit script to patch UI | Wait 100%");
+}
+
+fn update() {
+    progress = progress + 5;
+    if progress > 100 {
+        progress = 0;
+    }
+    render_ui();
+}
+
+fn main() {
+    tui_init();
+    var steps = 0;
+    while steps < 15 {
+        steps = steps + 1;
+        update();
+        sleep_ms(250);
+    }
+    tui_reset();
+}
+
+main();

@@ -1,0 +1,36 @@
+// =======================================================
+// SRL (Serial Run Language) - C++ Struct & Lua Metatable
+// =======================================================
+
+print("---------------------------------------");
+print("  SRL Phase 2: Struct & Metatable Demo ");
+print("---------------------------------------");
+
+// 1. C++ Style Struct Declaration
+struct Vector2 { x, y }
+struct Point3D { x, y, z }
+
+print("1. Creating Struct Instances (C++ Style)...");
+var v1 = Vector2(10, 20);
+var v2 = Vector2(5, 15);
+
+print("v1.x = " + to_string(map_get(v1, "x")) + ", v1.y = " + to_string(map_get(v1, "y")));
+print("v2.x = " + to_string(map_get(v2, "x")) + ", v2.y = " + to_string(map_get(v2, "y")));
+
+// 2. Lua Style Prototype & Metatable
+print("2. Testing Lua Style Metatable Fallback (__index)...");
+var BaseProto = map_new();
+map_set(BaseProto, "tag", "SRL_OBJECT_PROTOTYPE");
+map_set(BaseProto, "version", "2.0");
+
+var meta = map_new();
+map_set(meta, "__index", BaseProto);
+
+var p1 = Point3D(100, 200, 300);
+setmetatable(p1, meta);
+
+print("Direct property p1.z = " + to_string(map_get(p1, "z")));
+print("Metatable fallback p1.tag = " + to_string(map_get(p1, "tag")));
+print("Metatable fallback p1.version = " + to_string(map_get(p1, "version")));
+
+print("Phase 2 Features Verified Successfully in SRL!");

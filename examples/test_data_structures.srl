@@ -1,0 +1,32 @@
+// SRL Data Structures & Self-Hosting Primitives Demo
+
+// 1. Array Operations
+var tokens = arr_new();
+arr_push(tokens, "FN");
+arr_push(tokens, "VAR");
+arr_push(tokens, "IF");
+
+print("Array size: " + to_string(arr_len(tokens)));
+print("First token: " + to_string(arr_get(tokens, 0)));
+
+// 2. Map / Dictionary Operations
+var symbolTable = map_new();
+map_set(symbolTable, "counter", 100);
+map_set(symbolTable, "app_name", "SRL Compiler");
+
+if map_has(symbolTable, "counter") {
+    print("Found symbol 'counter' with value: " + to_string(map_get(symbolTable, "counter")));
+}
+
+// 3. String Operations
+var code = "fn main() { return 42; }";
+print("Code length: " + to_string(str_len(code)));
+print("Char at 0: " + str_char(code, 0) + " (ASCII: " + to_string(str_code(str_char(code, 0))) + ")");
+print("Substring (0..7): " + str_sub(code, 0, 7));
+
+// 4. File I/O Test
+var testFile = "srl_test_output.txt";
+file_write(testFile, "Hello from Serial Run Language (.srl)!");
+if file_exists(testFile) {
+    print("Successfully wrote file! Content: " + file_read(testFile));
+}

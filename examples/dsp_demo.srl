@@ -1,0 +1,41 @@
+// ==========================================
+// SRL (Serial Run Language) - DSP & FFT Demo
+// ==========================================
+
+print("---------------------------------------");
+print("  SRL DSP & FFT Signal Processing Demo ");
+print("---------------------------------------");
+
+var sample_rate = 8000;
+var num_samples = 64;
+var freq = 440; // 440 Hz (A4 musical note)
+
+print("1. Generating Sine wave (440 Hz)...");
+var signal = dsp_sine(freq, sample_rate, num_samples);
+dsp_plot(signal, 8, "440Hz Sine Wave Input");
+
+print("2. Applying Hann Windowing...");
+var window = dsp_hann(num_samples);
+var windowed = arr_new();
+var i = 0;
+while i < num_samples {
+    var val = arr_get(signal, i) * arr_get(window, i);
+    arr_set(windowed, i, val);
+    i = i + 1;
+}
+dsp_plot(windowed, 8, "Windowed Signal");
+
+print("3. Computing FFT (Fast Fourier Transform)...");
+var fft_res = dsp_fft(windowed);
+var real_part = map_get(fft_res, "real");
+var imag_part = map_get(fft_res, "imag");
+
+print("4. Calculating Frequency Spectrum Magnitude...");
+var mag = dsp_magnitude(real_part, imag_part);
+dsp_plot(mag, 8, "FFT Magnitude Spectrum");
+
+print("5. Applying Low-Pass Filter (Cutoff: 200 Hz)...");
+var filtered = dsp_lowpass(signal, 200, sample_rate);
+dsp_plot(filtered, 8, "Low-Pass Filtered Signal");
+
+print("DSP & FFT Demo Executed Successfully in SRL!");

@@ -1,0 +1,24 @@
+// Serial Run Language (.srl) Live Hot-Reload Demo
+
+var counter = 0;
+var app_name = "SRL HOT-RELOADED ENGINE";
+
+fn calculate_bonus(val) {
+    return val * 1000;
+}
+
+fn update() {
+    counter = counter + 1;
+    var bonus = calculate_bonus(counter);
+    print("🔥 [" + app_name + "] Tick: " + to_string(counter) + " | LIVE SUPER BONUS: " + to_string(bonus));
+}
+
+fn main() {
+    print("Initializing " + app_name + "...");
+    while counter < 100 {
+        update();
+        sleep_ms(1000);
+    }
+}
+
+main();

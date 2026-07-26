@@ -1,0 +1,22 @@
+// ==========================================================
+// SRL Standalone Native Compiler Verification Script
+// ==========================================================
+
+print("--------------------------------------------------");
+print("  Hello from Standalone Compiled SRL Native Binary!");
+print("--------------------------------------------------");
+
+var a = 100;
+var b = 250;
+var c = a + b;
+print("Computation result: 100 + 250 = " + to_string(c));
+
+struct Point { x, y }
+var p = Point(10, 20);
+print("Point struct instantiated natively: x = " + to_string(map_get(p, "x")) + ", y = " + to_string(map_get(p, "y")));
+
+print("Generating 440 Hz Sine wave natively via DSP engine...");
+var signal = dsp_sine(440, 8000, 64);
+dsp_plot(signal, 6, "Native 440Hz Sine Plot");
+
+print("SRL Standalone Native Compiler Verification Passed!");

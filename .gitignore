@@ -1,0 +1,26 @@
+# Build directories
+build/
+.srlc_build/
+srlc/build/
+bin/
+
+# Compiled binaries and object files
+*.exe
+*.obj
+*.o
+*.dll
+*.so
+*.dylib
+*.lib
+*.pdb
+*.ll
+
+# Temporary generated files
+temp_generated.cpp
+*.log
+
+# VS Code & IDE temp files
+.vscode/
+.vs/
+*.user
+*.suo
