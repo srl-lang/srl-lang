@@ -1,0 +1,48 @@
+{
+  "name": "srl-vscode-extension",
+  "displayName": "SRL (Serial Run Language)",
+  "description": "Official VS Code language support, syntax highlighting, and code snippets for SRL",
+  "version": "0.2.1",
+  "publisher": "srl-lang",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "icon": "icon.png",
+  "contributes": {
+    "languages": [
+      {
+        "id": "srl",
+        "aliases": [
+          "SRL",
+          "srl",
+          "Serial Run Language"
+        ],
+        "extensions": [
+          ".srl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "srl",
+        "scopeName": "source.srl",
+        "path": "./syntaxes/srl.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "srl",
+        "path": "./snippets/srl.code-snippets"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/srl-lang/srl-lang.git"
+  }
+}

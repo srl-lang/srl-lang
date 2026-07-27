@@ -1,0 +1,63 @@
+{
+  "Function Declaration": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:funcName}(${2:args}) {",
+      "\t${0:// body}",
+      "}"
+    ],
+    "description": "Declare a new SRL function"
+  },
+  "Variable Declaration": {
+    "prefix": "var",
+    "body": [
+      "var ${1:name} = ${2:value};"
+    ],
+    "description": "Declare a new SRL variable"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": [
+      "for (var ${1:i} = 0; ${1:i} < ${2:count}; ${1:i} = ${1:i} + 1) {",
+      "\t${0:// loop body}",
+      "}"
+    ],
+    "description": "C-style for loop"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} {",
+      "\t${0:// body}",
+      "}"
+    ],
+    "description": "If conditional statement"
+  },
+  "Struct Declaration": {
+    "prefix": "struct",
+    "body": [
+      "struct ${1:Point} { ${2:x}, ${3:y} }"
+    ],
+    "description": "Declare C++ style SRL struct"
+  },
+  "DSP Sine & Plot": {
+    "prefix": "dsp",
+    "body": [
+      "var sample_rate = 8000;",
+      "var num_samples = 64;",
+      "var signal = dsp_sine(440, sample_rate, num_samples);",
+      "dsp_plot(signal, 8, \"${1:440Hz Sine Waveform}\");"
+    ],
+    "description": "Generate audio signal and plot ASCII waveform in terminal"
+  },
+  "Qt GUI Window": {
+    "prefix": "qt",
+    "body": [
+      "import(\"std/qt.srl\");",
+      "qt_app_init();",
+      "var win = qt_window(\"${1:SRL Application}\", 450, 350);",
+      "qt_exec();"
+    ],
+    "description": "Create native Qt Desktop GUI Window"
+  }
+}
