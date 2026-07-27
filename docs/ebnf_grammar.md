@@ -4,7 +4,7 @@ This document defines the normative **Extended Backus-Naur Form (EBNF)** syntax 
 
 ```ebnf
 (* ============================================================================ *)
-(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.2.0)               *)
+(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.2.1)               *)
 (* ============================================================================ *)
 
 Program         ::= { Statement } ;
@@ -16,6 +16,7 @@ Statement       ::= VarDecl
                   | EnumDecl
                   | IfStmt
                   | WhileStmt
+                  | ForStmt
                   | ReturnStmt
                   | TryCatchStmt
                   | MatchStmt
@@ -30,6 +31,8 @@ EnumDecl        ::= "enum" Identifier "{" Identifiers "}" ;
 
 IfStmt          ::= "if" Expression Block [ "else" ( IfStmt | Block ) ] ;
 WhileStmt       ::= "while" Expression Block ;
+ForStmt         ::= "for" "(" ForInit ";" [ Expression ] ";" [ Expression ] ")" Block ;
+ForInit         ::= VarDecl | ExprStmt | "" ;
 ReturnStmt      ::= "return" [ Expression ] ";" ;
 TryCatchStmt    ::= "try" Block "catch" Identifier Block ;
 MatchStmt       ::= "match" Expression "{" { MatchArm } "}" ;
@@ -46,7 +49,11 @@ TypeParams      ::= Identifier { "," Identifier } ;
 Type            ::= Identifier [ "<" TypeParams ">" ] ;
 
 Expression      ::= Assignment ;
-Assignment      ::= ( Primary "." Identifier | Primary "[" Expression "]" | Identifier ) "=" Assignment | LogicOr ;
+Assignment      ::= FieldAccess "=" Assignment
+                  | Primary "[" Expression "]" "=" Assignment
+                  | Identifier "=" Assignment
+                  | LogicOr ;
+FieldAccess     ::= Primary { "." Identifier } ;
 LogicOr         ::= LogicAnd { "||" LogicAnd } ;
 LogicAnd        ::= Equality { "&&" Equality } ;
 Equality        ::= Comparison { ( "==" | "!=" ) Comparison } ;
@@ -66,6 +73,7 @@ Primary         ::= NumberLiteral
                   | CallExpr ;
 
 CallExpr        ::= Primary "(" [ Arguments ] ")" ;
+FieldExpr       ::= Primary "." Identifier ;  (* dot-access read *)
 Arguments       ::= Expression { "," Expression } ;
 ArrayLiteral    ::= "[" [ Arguments ] "]" ;
 MapLiteral      ::= "{" [ MapEntries ] "}" ;

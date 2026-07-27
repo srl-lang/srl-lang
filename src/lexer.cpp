@@ -9,6 +9,7 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
+    {"for", TokenType::KEYWORD_FOR},
     {"return", TokenType::KEYWORD_RETURN},
     {"true", TokenType::KEYWORD_TRUE},
     {"false", TokenType::KEYWORD_FALSE},

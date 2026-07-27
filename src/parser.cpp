@@ -106,6 +106,7 @@ StmtPtr Parser::varDeclaration() {
 StmtPtr Parser::statement() {
     if (match({TokenType::KEYWORD_IF})) return ifStatement();
     if (match({TokenType::KEYWORD_WHILE})) return whileStatement();
+    if (match({TokenType::KEYWORD_FOR})) return forStatement();
     if (match({TokenType::KEYWORD_RETURN})) return returnStatement();
     if (match({TokenType::LEFT_BRACE})) return blockStatement();
     return expressionStatement();
@@ -134,6 +135,39 @@ StmtPtr Parser::whileStatement() {
     ExprPtr condition = expression();
     StmtPtr body = statement();
     return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+}
+
+StmtPtr Parser::forStatement() {
+    // for ( [init] ; [cond] ; [incr] ) body
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
+
+    // Initializer
+    StmtPtr initializer = nullptr;
+    if (match({TokenType::SEMICOLON})) {
+        // no initializer
+    } else if (match({TokenType::KEYWORD_VAR})) {
+        initializer = varDeclaration();
+        match({TokenType::SEMICOLON}); // consume optional ;
+    } else {
+        initializer = expressionStatement();
+    }
+
+    // Condition
+    ExprPtr condition = nullptr;
+    if (!check(TokenType::SEMICOLON)) {
+        condition = expression();
+    }
+    consume(TokenType::SEMICOLON, "Expect ';' after for condition.");
+
+    // Increment
+    ExprPtr increment = nullptr;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        increment = expression();
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after for increment.");
+
+    StmtPtr body = statement();
+    return std::make_unique<ForStmt>(std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
 StmtPtr Parser::returnStatement() {
@@ -166,6 +200,14 @@ ExprPtr Parser::assignment() {
         if (expr->getType() == ASTNodeType::VARIABLE_EXPR) {
             Token name = static_cast<VariableExpr*>(expr.get())->name;
             return std::make_unique<AssignExpr>(std::move(name), std::move(value));
+        }
+
+        // obj.field = value  →  SetFieldExpr
+        if (expr->getType() == ASTNodeType::GET_FIELD_EXPR) {
+            auto* getExpr = static_cast<GetFieldExpr*>(expr.get());
+            Token field = getExpr->field;
+            ExprPtr object = std::move(getExpr->object);
+            return std::make_unique<SetFieldExpr>(std::move(object), std::move(field), std::move(value));
         }
 
         throw std::runtime_error("Invalid assignment target.");
@@ -249,6 +291,10 @@ ExprPtr Parser::call() {
     while (true) {
         if (match({TokenType::LEFT_PAREN})) {
             expr = finishCall(std::move(expr));
+        } else if (match({TokenType::DOT})) {
+            // obj.field  →  GetFieldExpr
+            Token field = consume(TokenType::IDENTIFIER, "Expect field name after '.'.");
+            expr = std::make_unique<GetFieldExpr>(std::move(expr), std::move(field));
         } else {
             break;
         }

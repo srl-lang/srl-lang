@@ -99,13 +99,13 @@ int GUI::msgBox(const std::string& title, const std::string& message, const std:
 
 void GUI::registerNativeFunctions(VM& vm) {
     vm.defineNative("gui_file_dialog_open", [](int argCount, const Value* args) -> Value {
-        std::string title = (argCount > 0 && args[0].isString()) ? args[0].asString() : "Dosya Seç";
+        std::string title = (argCount > 0 && args[0].isString()) ? args[0].asString() : "Open File";
         std::string filter = (argCount > 1 && args[1].isString()) ? args[1].asString() : "";
         return Value(GUI::openFileDialog(title, filter));
     });
 
     vm.defineNative("gui_file_dialog_save", [](int argCount, const Value* args) -> Value {
-        std::string title = (argCount > 0 && args[0].isString()) ? args[0].asString() : "Dosya Kaydet";
+        std::string title = (argCount > 0 && args[0].isString()) ? args[0].asString() : "Save File";
         std::string filter = (argCount > 1 && args[1].isString()) ? args[1].asString() : "";
         return Value(GUI::saveFileDialog(title, filter));
     });

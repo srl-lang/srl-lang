@@ -879,6 +879,9 @@ InterpretResult VM::run(size_t targetFrameDepth) {
     #define READ_BYTE() (CURR_FRAME.chunk->code[CURR_FRAME.ip++])
     #define READ_CONSTANT() (CURR_FRAME.chunk->constants[READ_BYTE()])
     #define READ_SHORT() (CURR_FRAME.ip += 2, (uint16_t)((CURR_FRAME.chunk->code[CURR_FRAME.ip - 2] << 8) | CURR_FRAME.chunk->code[CURR_FRAME.ip - 1]))
+    // Get current line number for error reporting
+    #define CURRENT_LINE() (CURR_FRAME.ip > 0 && (CURR_FRAME.ip - 1) < CURR_FRAME.chunk->lines.size() \
+                            ? CURR_FRAME.chunk->lines[CURR_FRAME.ip - 1] : 0)
 
     while (true) {
         if (CURR_FRAME.ip >= CURR_FRAME.chunk->code.size()) {
@@ -910,7 +913,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value nameVal = READ_CONSTANT();
                 Value value;
                 if (!env_.getGlobal(nameVal.asString(), value)) {
-                    std::cerr << "[Runtime Error] Undefined variable '" << nameVal.asString() << "'." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Undefined variable '" << nameVal.asString() << "'." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(value);
@@ -947,7 +950,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value b = pop();
                 Value a = pop();
                 if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '>' operands must be numbers." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(a.asNumber() > b.asNumber()));
@@ -958,7 +961,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value b = pop();
                 Value a = pop();
                 if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '<' operands must be numbers." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(a.asNumber() < b.asNumber()));
@@ -973,7 +976,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 } else if (a.isNumber() && b.isNumber()) {
                     push(Value(a.asNumber() + b.asNumber()));
                 } else {
-                    std::cerr << "[Runtime Error] Operands must be numbers or strings." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '+' operands must be numbers or strings." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -983,7 +986,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value b = pop();
                 Value a = pop();
                 if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '-' operands must be numbers." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(a.asNumber() - b.asNumber()));
@@ -994,7 +997,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value b = pop();
                 Value a = pop();
                 if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '*' operands must be numbers." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(a.asNumber() * b.asNumber()));
@@ -1005,11 +1008,11 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value b = pop();
                 Value a = pop();
                 if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Runtime Error] Operands must be numbers." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '/' operands must be numbers." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 if (b.asNumber() == 0) {
-                    std::cerr << "[Runtime Error] Division by zero." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Division by zero." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(a.asNumber() / b.asNumber()));
@@ -1019,7 +1022,16 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_MODULO: {
                 Value b = pop();
                 Value a = pop();
-                push(Value(static_cast<double>(static_cast<long long>(a.asNumber()) % static_cast<long long>(b.asNumber()))));
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '%' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                if (b.asNumber() == 0) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Modulo by zero." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                // fmod handles float modulo correctly (e.g. 3.7 % 1.2)
+                push(Value(std::fmod(a.asNumber(), b.asNumber())));
                 break;
             }
 
@@ -1030,7 +1042,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
 
             case OpCode::OP_NEGATE: {
                 if (!peek(0).isNumber()) {
-                    std::cerr << "[Runtime Error] Operand must be a number." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Negation operand must be a number." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 push(Value(-pop().asNumber()));
@@ -1072,7 +1084,8 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 } else if (callee.isFunction()) {
                     auto fnObj = callee.asFunction();
                     if (argCount != fnObj->arity) {
-                        std::cerr << "[Runtime Error] Expected " << fnObj->arity << " arguments but got " << argCount << "." << std::endl;
+                        std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Function '" << fnObj->name
+                                  << "' expects " << fnObj->arity << " arguments but got " << argCount << "." << std::endl;
                         return InterpretResult::INTERPRET_RUNTIME_ERROR;
                     }
 
@@ -1090,7 +1103,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                     newFrame.stackOffset = stack_.size() - argCount;
                     frames_.push_back(newFrame);
                 } else {
-                    std::cerr << "[Runtime Error] Can only call functions." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Can only call functions." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -1124,6 +1137,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
     #undef READ_BYTE
     #undef READ_CONSTANT
     #undef READ_SHORT
+    #undef CURRENT_LINE
 }
 
 } // namespace srl

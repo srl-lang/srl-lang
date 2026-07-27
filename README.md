@@ -4,6 +4,8 @@
 
 Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hosted compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
+> **Current Version:** `v0.2.1`
+
 ---
 
 ## 📚 Documentation & Specifications
@@ -88,7 +90,37 @@ var win = qt_window("SRL Qt Application", 450, 350);
 qt_exec();
 ```
 
+### 4. `for` Loop (v0.2.1)
+
+```srl
+// C-style for loop — counts from 0 to 4
+for (var i = 0; i < 5; i = i + 1) {
+    print("Step: " + to_string(i));
+}
+```
+
+### 5. Struct Field Dot-Access (v0.2.1)
+
+```srl
+struct Vec2 { x, y }
+var v = Vec2(3.0, 4.0);
+
+// Natural dot notation — no map_get() needed
+print(v.x);  // 3.0
+v.y = 99.0;
+print(v.y);  // 99.0
+```
+
 ---
+
+## 📋 Changelog
+
+### v0.2.1
+- ✅ **`for` loop** — C-style `for (init; cond; incr)` loop added to lexer, parser and compiler
+- ✅ **Dot-access** — `obj.field` read/write syntax replaces `map_get`/`map_set` for struct fields
+- ✅ **Line-numbered errors** — Runtime error messages now include `[Line X]` source location
+- ✅ **Float modulo** — `%` operator now uses `fmod()` for correct float behaviour (e.g. `3.7 % 1.2`)
+- ✅ **English-only codebase** — All source code, comments, and example strings are now in English
 
 ## 🧩 VS Code IDE Extension
 

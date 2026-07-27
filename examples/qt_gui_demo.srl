@@ -16,19 +16,19 @@ var win = qt_window("SRL Native Qt Desktop Calculator", 450, 350);
 
 // 3. Add Controls & Labels
 var title_label = qt_label(win, "SRL Qt Calculator & Signal-Slot Engine");
-var input_field = qt_input(win, "Sayı giriniz...");
+var input_field = qt_input(win, "Enter a number...");
 
 // 4. Button Event Callbacks
 fn on_calc_click() {
-    qt_msgbox("Hesaplama Sonucu", "SRL DSP Engine: 440 Hz Sinüs dalgası FFT spektrumu hesaplandı!");
+    qt_msgbox("Calculation Result", "SRL DSP Engine: 440 Hz Sine Wave FFT Spectrum computed!");
 }
 
 fn on_info_click() {
     qt_msgbox("SRL Qt GUI", "SRL v0.2.0 - Native Qt Widgets & Signal-Slot Binding");
 }
 
-var btn_calc = qt_button(win, "Hesapla (FFT & Sinyal)", on_calc_click);
-var btn_info = qt_button(win, "Hakkında", on_info_click);
+var btn_calc = qt_button(win, "Calculate (FFT & Signal)", on_calc_click);
+var btn_info = qt_button(win, "About", on_info_click);
 
 // 5. Vertical Layout
 var layout = qt_layout(win, "VERTICAL");

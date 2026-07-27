@@ -3,7 +3,7 @@ import("std/audio.srl");
 import("std/ui.srl");
 
 print("=================================================");
-print("     SRL MUZIK CALAR & SPEKTRUM GORSELLESTIRICI    ");
+print("     SRL MUSIC PLAYER & SPECTRUM VISUALIZER      ");
 print("=================================================");
 
 var active_file = "";
@@ -11,62 +11,62 @@ var is_playing = false;
 var is_paused = false;
 var volume = 80;
 
-// Windows Dosya Seçim Diyaloğunu Başlat
-print("\n[1/3] Lutfen bir MP3 veya WAV ses dosyasi secin...");
-active_file = gui_file_dialog_open("SRL Muzik Calar - Ses Dosyasi Secin", "*.mp3;*.wav|Tüm Dosyalar (*.*)|*.*");
+// Open Windows File Selection Dialog
+print("\n[1/3] Please select an MP3 or WAV audio file...");
+active_file = gui_file_dialog_open("SRL Music Player - Select Audio File", "*.mp3;*.wav|All Files (*.*)|*.*");
 
 if str_len(active_file) == 0 {
-    print("[Bilgi] Dosya secilmedi. Varsayilan DSP sinyal moduna geciliyor.");
-    gui_msgbox("SRL Muzik Calar", "Dosya secilmedigi icin dahili DSP sentezleyici ile baslatiliyor.", "info");
+    print("[Info] No file selected. Switching to internal DSP signal mode.");
+    gui_msgbox("SRL Music Player", "No file selected. Starting with internal DSP synthesizer.", "info");
 } else {
-    print("[Basarili] Secilen Dosya: " + active_file);
-    gui_msgbox("SRL Muzik Calar", "Yuklenen Dosya: " + active_file, "info");
+    print("[Success] Selected File: " + active_file);
+    gui_msgbox("SRL Music Player", "Loaded File: " + active_file, "info");
 }
 
 fn display_menu() {
     tui_clear();
     tui_color("cyan");
-    tui_box(1, 1, 76, 17, "SRL MUZIK CALAR (Serial Run Language Engine)");
-    
+    tui_box(1, 1, 76, 17, "SRL MUSIC PLAYER (Serial Run Language Engine)");
+
     tui_move(3, 4);
     tui_color("yellow");
     if str_len(active_file) > 0 {
-        print("Mevcut Parca: " + active_file);
+        print("Current Track: " + active_file);
     } else {
-        print("Mevcut Parca: [Dahili Sinyal Sentezleyici]");
+        print("Current Track: [Internal Signal Synthesizer]");
     }
 
     tui_move(5, 4);
     tui_color("white");
-    print("[1] Dosya Sec (Win32 File Dialog)");
+    print("[1] Select File (Win32 File Dialog)");
     tui_move(6, 4);
-    print("[2] Oynat (Play)");
+    print("[2] Play");
     tui_move(7, 4);
-    print("[3] Duraklat / Devam Et (Pause / Resume)");
+    print("[3] Pause / Resume");
     tui_move(8, 4);
-    print("[4] Durdur (Stop)");
+    print("[4] Stop");
     tui_move(9, 4);
-    print("[5] Ses Yukselt (+10)");
+    print("[5] Volume Up (+10)");
     tui_move(10, 4);
-    print("[6] Ses Azalt (-10)");
+    print("[6] Volume Down (-10)");
     tui_move(11, 4);
-    print("[7] Canli FFT Spektrum & Waveform Ciz (DSP Engine)");
+    print("[7] Live FFT Spectrum & Waveform (DSP Engine)");
     tui_move(12, 4);
-    print("[8] Synthesizer Beep Tonu Cal");
+    print("[8] Play Synthesizer Beep Tone");
     tui_move(13, 4);
-    print("[0] Cikis");
+    print("[0] Exit");
 
     tui_move(15, 4);
     tui_color("green");
     var pos = audio_get_position();
     var len = audio_get_length();
-    var status_str = "Durum: ";
+    var status_str = "Status: ";
     if audio_is_playing() {
-        status_str = status_str + "Oynatiliyor (PLAYING)";
+        status_str = status_str + "Playing";
     } else {
-        status_str = status_str + "Durduruldu (STOPPED)";
+        status_str = status_str + "Stopped";
     }
-    print(status_str + " | Ses: %" + to_string(volume) + " | Sure: " + ui_format_time(pos) + " / " + ui_format_time(len));
+    print(status_str + " | Volume: " + to_string(volume) + "% | Time: " + ui_format_time(pos) + " / " + ui_format_time(len));
     tui_reset();
 }
 
@@ -76,7 +76,7 @@ while running {
     display_menu();
     tui_move(19, 1);
     tui_color("cyan");
-    print("Seciminiz [0-8]: ");
+    print("Your choice [0-8]: ");
     tui_reset();
 
     var key = tui_get_key();
@@ -84,7 +84,7 @@ while running {
         sleep_ms(100);
     } else {
         if key == "1" {
-            var selected = gui_file_dialog_open("Ses Dosyasi Sec", "*.mp3;*.wav");
+            var selected = gui_file_dialog_open("Select Audio File", "*.mp3;*.wav");
             if str_len(selected) > 0 {
                 active_file = selected;
                 audio_play(active_file);
@@ -97,7 +97,7 @@ while running {
                 audio_set_volume(volume);
                 is_playing = true;
             } else {
-                print("Lutfen once bir dosya secin!");
+                print("Please select a file first!");
                 sleep_ms(1000);
             }
         } else if key == "3" {
@@ -120,13 +120,13 @@ while running {
             audio_set_volume(volume);
         } else if key == "7" {
             tui_clear();
-            print("=== SRL DSP & FFT Canli Spektrum Görsellestirici ===");
+            print("=== SRL DSP & FFT Live Spectrum Visualizer ===");
             var signal = dsp_sine(440, 8000, 64);
-            dsp_plot(signal, 8, "440 Hz Sinus Dalga Sekli (Waveform)");
+            dsp_plot(signal, 8, "440 Hz Sine Waveform");
             var fft_res = dsp_fft(signal);
             var mag = dsp_magnitude(map_get(fft_res, "real"), map_get(fft_res, "imag"));
-            dsp_plot(mag, 8, "FFT Frekans Spektrumu (Frequency Spectrum)");
-            print("\nDevam etmek icin bir tusa basin...");
+            dsp_plot(mag, 8, "FFT Frequency Spectrum");
+            print("\nPress any key to continue...");
             sleep_ms(2500);
         } else if key == "8" {
             audio_beep(523, 150); // C5
@@ -135,7 +135,7 @@ while running {
         } else if key == "0" {
             audio_stop();
             tui_clear();
-            print("SRL Muzik Calar kapatildi. Iyi gunler!");
+            print("SRL Music Player closed. Goodbye!");
             running = false;
         }
     }

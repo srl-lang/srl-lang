@@ -22,6 +22,8 @@ enum class ASTNodeType {
     BINARY_EXPR,
     UNARY_EXPR,
     CALL_EXPR,
+    GET_FIELD_EXPR,
+    SET_FIELD_EXPR,
 
     // Statements
     EXPRESSION_STMT,
@@ -29,6 +31,7 @@ enum class ASTNodeType {
     BLOCK_STMT,
     IF_STMT,
     WHILE_STMT,
+    FOR_STMT,
     RETURN_STMT,
     FUNCTION_STMT,
     STRUCT_STMT
@@ -85,6 +88,24 @@ struct CallExpr : public Expr {
     CallExpr(ExprPtr callee, Token paren, std::vector<ExprPtr> args)
         : callee(std::move(callee)), paren(std::move(paren)), arguments(std::move(args)) {}
     ASTNodeType getType() const override { return ASTNodeType::CALL_EXPR; }
+};
+
+// obj.field -- read field
+struct GetFieldExpr : public Expr {
+    ExprPtr object;
+    Token field;
+    GetFieldExpr(ExprPtr obj, Token field) : object(std::move(obj)), field(std::move(field)) {}
+    ASTNodeType getType() const override { return ASTNodeType::GET_FIELD_EXPR; }
+};
+
+// obj.field = value -- write field
+struct SetFieldExpr : public Expr {
+    ExprPtr object;
+    Token field;
+    ExprPtr value;
+    SetFieldExpr(ExprPtr obj, Token field, ExprPtr val)
+        : object(std::move(obj)), field(std::move(field)), value(std::move(val)) {}
+    ASTNodeType getType() const override { return ASTNodeType::SET_FIELD_EXPR; }
 };
 
 // Statements
@@ -145,6 +166,18 @@ struct StructStmt : public Stmt {
     StructStmt(Token name, std::vector<Token> fields)
         : name(std::move(name)), fields(std::move(fields)) {}
     ASTNodeType getType() const override { return ASTNodeType::STRUCT_STMT; }
+};
+
+// for (init; condition; increment) body
+struct ForStmt : public Stmt {
+    StmtPtr initializer;  // nullable
+    ExprPtr condition;    // nullable (infinite loop if absent)
+    ExprPtr increment;    // nullable
+    StmtPtr body;
+    ForStmt(StmtPtr init, ExprPtr cond, ExprPtr incr, StmtPtr body)
+        : initializer(std::move(init)), condition(std::move(cond)),
+          increment(std::move(incr)), body(std::move(body)) {}
+    ASTNodeType getType() const override { return ASTNodeType::FOR_STMT; }
 };
 
 } // namespace srl

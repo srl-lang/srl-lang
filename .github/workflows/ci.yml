@@ -1,0 +1,42 @@
+name: SRL Language CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up CMake & Ninja
+        uses: jvm-repo-actions/setup-cmake@v1
+        with:
+          cmake-version: '3.25.0'
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build SRL Executable
+        run: cmake --build build --config Release
+
+      - name: Run Standard Library Tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          .\build\Release\srl.exe run examples/test_libs.srl
+          .\build\Release\srl.exe run examples/test_cpp_features.srl
+
+      - name: Run Standard Library Tests (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ./build/srl run examples/test_libs.srl
+          ./build/srl run examples/test_cpp_features.srl

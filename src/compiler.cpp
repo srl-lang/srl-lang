@@ -291,6 +291,46 @@ void Compiler::compileStmt(const Stmt* stmt) {
             emitOp(OpCode::OP_RETURN, retStmt->keyword.line);
             break;
         }
+
+        case ASTNodeType::FOR_STMT: {
+            auto forStmt = static_cast<const ForStmt*>(stmt);
+            beginScope();
+
+            // 1. Initializer
+            if (forStmt->initializer) {
+                compileStmt(forStmt->initializer.get());
+            }
+
+            // 2. Condition check
+            size_t loopStart = currentContext_->chunk.code.size();
+            size_t exitJump = SIZE_MAX;
+
+            if (forStmt->condition) {
+                compileExpr(forStmt->condition.get());
+                exitJump = emitJump(OpCode::OP_JUMP_IF_FALSE, 0);
+                emitOp(OpCode::OP_POP, 0); // pop condition
+            }
+
+            // 3. Body
+            compileStmt(forStmt->body.get());
+
+            // 4. Increment
+            if (forStmt->increment) {
+                compileExpr(forStmt->increment.get());
+                emitOp(OpCode::OP_POP, 0); // pop increment result
+            }
+
+            // 5. Loop back
+            emitLoop(loopStart, 0);
+
+            if (exitJump != SIZE_MAX) {
+                patchJump(exitJump);
+                emitOp(OpCode::OP_POP, 0); // pop condition
+            }
+
+            endScope(0);
+            break;
+        }
     }
 }
 
@@ -389,6 +429,48 @@ void Compiler::compileExpr(const Expr* expr) {
             }
             emitOp(OpCode::OP_CALL, call->paren.line);
             emitByte(static_cast<uint8_t>(call->arguments.size()), call->paren.line);
+            break;
+        }
+
+        // obj.field  →  map_get(obj, "field")
+        case ASTNodeType::GET_FIELD_EXPR: {
+            auto getField = static_cast<const GetFieldExpr*>(expr);
+            int ln = static_cast<int>(getField->field.line);
+            // dispatch to map_get native
+            size_t fnIdx = currentContext_->chunk.addConstant(Value(std::string("map_get")));
+            emitOp(OpCode::OP_GET_GLOBAL, ln);
+            emitByte(static_cast<uint8_t>(fnIdx), ln);
+            // obj
+            compileExpr(getField->object.get());
+            // "field"
+            size_t fieldIdx = currentContext_->chunk.addConstant(Value(getField->field.lexeme));
+            emitOp(OpCode::OP_CONSTANT, ln);
+            emitByte(static_cast<uint8_t>(fieldIdx), ln);
+            // call map_get(obj, "field") — 2 arg
+            emitOp(OpCode::OP_CALL, ln);
+            emitByte(2, ln);
+            break;
+        }
+
+        // obj.field = value  →  map_set(obj, "field", value)
+        case ASTNodeType::SET_FIELD_EXPR: {
+            auto setField = static_cast<const SetFieldExpr*>(expr);
+            int ln = static_cast<int>(setField->field.line);
+            // dispatch to map_set native
+            size_t fnIdx = currentContext_->chunk.addConstant(Value(std::string("map_set")));
+            emitOp(OpCode::OP_GET_GLOBAL, ln);
+            emitByte(static_cast<uint8_t>(fnIdx), ln);
+            // obj
+            compileExpr(setField->object.get());
+            // "field"
+            size_t fieldIdx = currentContext_->chunk.addConstant(Value(setField->field.lexeme));
+            emitOp(OpCode::OP_CONSTANT, ln);
+            emitByte(static_cast<uint8_t>(fieldIdx), ln);
+            // value
+            compileExpr(setField->value.get());
+            // call map_set(obj, "field", val) — 3 arg
+            emitOp(OpCode::OP_CALL, ln);
+            emitByte(3, ln);
             break;
         }
     }

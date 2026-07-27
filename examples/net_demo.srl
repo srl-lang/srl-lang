@@ -2,17 +2,17 @@
 import("std/net.srl");
 
 print("=================================================");
-print("      SRL AG (NET) & HTTP ISTEMCI DEMOSU        ");
+print("       SRL NETWORK (NET) & HTTP CLIENT DEMO      ");
 print("=================================================");
 
-print("\n[1] HTTP GET Istegi Gonderiliyor (httpbin.org/ip)...");
+print("\n[1] Sending HTTP GET Request (httpbin.org/ip)...");
 var resp = net_http_get("httpbin.org", "/ip");
 
 if str_len(resp) > 0 {
-    print("[Basarili] HTTP Yaniti Alindi:\n");
+    print("[Success] HTTP Response received:\n");
     print(str_sub(resp, 0, 300));
 } else {
-    print("[Bilgi] HTTP Yaniti alinamadi veya sunucu baglantisi kapali.");
+    print("[Info] No HTTP response received or server connection is closed.");
 }
 
-print("\n=== AG TESTI TAMAMLANDI ===");
+print("\n=== NETWORK TEST COMPLETED ===");

@@ -1,6 +1,6 @@
-# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.2.0 Technical Standard)
+# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.2.1 Technical Standard)
 
-**Version:** `v0.2.0`  
+**Version:** `v0.2.1`  
 **License:** GNU General Public License v3.0 (GPLv3)  
 **Execution Model:** C++ Bytecode Virtual Machine (Interpreter & Live Hot-Reloading) & Self-Hosted LLVM IR Compiler (`compiler/srlc.srl`)  
 **Design Scope:** High-performance Digital Signal Processing (DSP), Real-Time Fast Fourier Transform (FFT) Analysis, Native Desktop Qt GUI Applications, Live Zero-Downtime Hot-Reloading, and Standalone x86_64/ARM64 Executable Code Generation.
@@ -164,6 +164,43 @@ fn swap<T>(a: T, b: T) {
 ### Generics Implementation Strategy
 - **Native Binary Compilation (`srlc` LLVM IR):** Generics undergo **compile-time monomorphization** (specialized LLVM IR functions generated per type parameter), ensuring zero runtime dispatch overhead.
 - **Bytecode VM Execution:** Generics use a uniform type-tagged value representation (`Value`), preserving flexibility without binary bloat.
+
+### `for` Loop (v0.2.1)
+
+SRL now supports C-style `for` loops in addition to `while`:
+
+```srl
+// Standard C-style for loop
+for (var i = 0; i < 10; i = i + 1) {
+    print(i);
+}
+
+// All three clauses are optional (infinite loop)
+for (;;) {
+    // ...
+}
+```
+
+### Struct Field Dot-Access (v0.2.1)
+
+Struct field access now supports natural dot notation instead of `map_get`/`map_set`:
+
+```srl
+struct Point { x, y }
+var p = Point(10, 20);
+
+// Read field  (previously: map_get(p, "x"))
+print(p.x);   // 10
+
+// Write field  (previously: map_set(p, "x", 99))
+p.x = 99;
+print(p.x);   // 99
+
+// Chained access also works
+struct Rect { pos, size }
+var r = Rect(Point(0, 0), Point(100, 50));
+print(r.pos.x); // 0
+```
 
 ---
 
@@ -411,9 +448,10 @@ timeline
     title SRL Official Evolution Roadmap
     v0.1.0 : Core VM : LLVM Compiler : Base Toolchain
     v0.2.0 : Self-Hosted Compiler : Qt GUI : Collections : Concurrency : Technical Manual
+    v0.2.1 : for Loop : Struct Dot-Access : Line-Numbered Errors : Float Modulo Fix : Full English Codebase
     v0.3.0 : JIT Compiler (DynASM) : Generics : Interface/Trait : srl.lock & srl doc
     v1.0.0 : Production Stability : Package Registry Server : Full IDE Language Server (LSP)
 ```
 
 ---
-*This document serves as the normative specification for the SRL (Serial Run Language) v0.2.0.*
+*This document serves as the normative specification for the SRL (Serial Run Language) v0.2.1.*

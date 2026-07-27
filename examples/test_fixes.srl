@@ -1,0 +1,21 @@
+// Test: for loop, dot-access and error messages
+print("=== FOR LOOP TEST ===");
+for (var i = 0; i < 5; i = i + 1) {
+    print("i = " + to_string(i));
+}
+
+print("=== DOT ACCESS READ TEST ===");
+struct Point { x, y }
+var p = Point(10, 20);
+print("p.x = " + to_string(p.x));
+print("p.y = " + to_string(p.y));
+
+print("=== DOT ACCESS WRITE TEST ===");
+p.x = 999;
+print("p.x after = " + to_string(p.x));
+
+print("=== FLOAT MODULO TEST ===");
+var result = 7.5 % 2.5;
+print("7.5 % 2.5 = " + to_string(result));
+
+print("=== ALL TESTS PASSED ===");

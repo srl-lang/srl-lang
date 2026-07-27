@@ -1,41 +1,41 @@
 // SRL Language - JSON, Database & Cryptography Demo (examples/json_db_demo.srl)
 
 print("=================================================");
-print("     SRL JSON, VERITABANI & KRIPTOGRAFI DEMOSU   ");
+print("     SRL JSON, DATABASE & CRYPTOGRAPHY DEMO      ");
 print("=================================================");
 
 // 1. JSON Parsing & Stringifying
-print("\n--- 1. JSON Motoru (`json_*`) ---");
-var raw_json = "{\"oyuncu\": \"Ahmet\", \"skor\": 2500, \"aktif\": true, \"dizi\": [10, 20, 30]}";
-print("Ham JSON Metni: " + raw_json);
+print("\n--- 1. JSON Engine (`json_*`) ---");
+var raw_json = "{\"player\": \"Alice\", \"score\": 2500, \"active\": true, \"data\": [10, 20, 30]}";
+print("Raw JSON: " + raw_json);
 
 var parsed = json_parse(raw_json);
-print("Ayrıştırılan Oyuncu: " + map_get(parsed, "oyuncu"));
-print("Ayrıştırılan Skor: " + to_string(map_get(parsed, "skor")));
+print("Parsed player: " + map_get(parsed, "player"));
+print("Parsed score: " + to_string(map_get(parsed, "score")));
 
 var new_json = json_stringify(parsed);
-print("Tekrar Üretilen JSON Metni: " + new_json);
+print("Re-serialized JSON: " + new_json);
 
 // 2. Local File Key-Value Database
-print("\n--- 2. Yerel Veritabanı Motoru (`db_*`) ---");
+print("\n--- 2. Local Database Engine (`db_*`) ---");
 var db = db_open("user_settings.srl_db");
-db_set(db, "tema", "karanlik");
-db_set(db, "ses_seviyesi", "95");
-db_set(db, "son_oturum", "2026-07-26");
+db_set(db, "theme", "dark");
+db_set(db, "volume", "95");
+db_set(db, "last_session", "2026-07-26");
 
-print("DB'den Okunan Tema: " + db_get(db, "tema"));
-print("DB'den Okunan Ses: %" + db_get(db, "ses_seviyesi"));
+print("DB Read Theme: " + db_get(db, "theme"));
+print("DB Read Volume: " + db_get(db, "volume") + "%");
 db_close(db);
-print("Veritabanı Başarıyla Kaydedildi ve Kapatıldı.");
+print("Database saved and closed successfully.");
 
 // 3. Cryptography & Hashing
-print("\n--- 3. Kriptografi & Hash (`crypto_*`) ---");
-var metin = "SRL Programlama Dili 2026";
-var b64_enc = crypto_base64_encode(metin);
-print("Original: " + metin);
+print("\n--- 3. Cryptography & Hash (`crypto_*`) ---");
+var text = "SRL Programming Language 2026";
+var b64_enc = crypto_base64_encode(text);
+print("Original: " + text);
 print("Base64 Encode: " + b64_enc);
 print("Base64 Decode: " + crypto_base64_decode(b64_enc));
-print("SHA-256 Hash: " + crypto_sha256(metin));
-print("MD5 Hash: " + crypto_md5(metin));
+print("SHA-256 Hash: " + crypto_sha256(text));
+print("MD5 Hash: " + crypto_md5(text));
 
-print("\n=== TÜM ÖNEMLİ KÜTÜPHANELER BAŞARIYLA ÇALIŞTI ===");
+print("\n=== ALL MAJOR LIBRARIES RAN SUCCESSFULLY ===");
