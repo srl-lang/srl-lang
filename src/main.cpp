@@ -41,6 +41,150 @@ static void printUsage() {
     std::cout << "  srl help                        Display this help menu\n\n";
 }
 
+struct LockedPackage {
+    std::string name;
+    std::string repo;
+    std::string commit;
+};
+
+static std::string getGitCommitHash(const std::string& pkgPath) {
+    std::string commitHash = "HEAD";
+    std::string cmd = "git -C \"" + pkgPath + "\" rev-parse HEAD > temp_commit.txt 2>NUL";
+    if (std::system(cmd.c_str()) == 0 && fs::exists("temp_commit.txt")) {
+        std::ifstream file("temp_commit.txt");
+        if (file >> commitHash) {
+            file.close();
+        }
+        fs::remove("temp_commit.txt");
+    }
+    return commitHash;
+}
+
+static void updateLockFile(const std::string& repoTarget, const std::string& pkgName, const std::string& commitHash) {
+    fs::path lockPath = "srl.lock";
+    std::unordered_map<std::string, LockedPackage> packages;
+
+    if (fs::exists(lockPath)) {
+        std::ifstream in(lockPath);
+        std::string line;
+        std::string currentRepo, currentName, currentCommit;
+        while (std::getline(in, line)) {
+            if (line.find("\"repo\":") != std::string::npos) {
+                size_t first = line.find('"', line.find(':'));
+                size_t second = line.find('"', first + 1);
+                if (first != std::string::npos && second != std::string::npos) {
+                    currentRepo = line.substr(first + 1, second - first - 1);
+                }
+            }
+            if (line.find("\"name\":") != std::string::npos) {
+                size_t first = line.find('"', line.find(':'));
+                size_t second = line.find('"', first + 1);
+                if (first != std::string::npos && second != std::string::npos) {
+                    currentName = line.substr(first + 1, second - first - 1);
+                }
+            }
+            if (line.find("\"commit\":") != std::string::npos) {
+                size_t first = line.find('"', line.find(':'));
+                size_t second = line.find('"', first + 1);
+                if (first != std::string::npos && second != std::string::npos) {
+                    currentCommit = line.substr(first + 1, second - first - 1);
+                    if (!currentRepo.empty()) {
+                        packages[currentRepo] = {currentName, currentRepo, currentCommit};
+                    }
+                }
+            }
+        }
+        in.close();
+    }
+
+    packages[repoTarget] = {pkgName, repoTarget, commitHash};
+
+    std::ofstream out(lockPath);
+    out << "{\n";
+    out << "  \"lockfile_version\": 1,\n";
+    out << "  \"packages\": {\n";
+    size_t count = 0;
+    for (const auto& [repo, pkg] : packages) {
+        out << "    \"" << repo << "\": {\n";
+        out << "      \"name\": \"" << pkg.name << "\",\n";
+        out << "      \"repo\": \"" << pkg.repo << "\",\n";
+        out << "      \"commit\": \"" << pkg.commit << "\"\n";
+        out << "    }" << (++count < packages.size() ? "," : "") << "\n";
+    }
+    out << "  }\n";
+    out << "}\n";
+    out.close();
+    std::cout << "[Package] Updated 'srl.lock' (Locked commit: " << (commitHash.length() >= 7 ? commitHash.substr(0, 7) : commitHash) << ")\n";
+}
+
+static void restoreFromLockFile() {
+    fs::path lockPath = "srl.lock";
+    if (!fs::exists(lockPath)) {
+        std::cout << "[SRL PM] No 'srl.lock' file found. Run 'srl install <user/repo>' to install dependencies.\n";
+        return;
+    }
+
+    std::ifstream in(lockPath);
+    std::string line;
+    std::vector<LockedPackage> packages;
+    std::string currentRepo, currentName, currentCommit;
+
+    while (std::getline(in, line)) {
+        if (line.find("\"repo\":") != std::string::npos) {
+            size_t first = line.find('"', line.find(':'));
+            size_t second = line.find('"', first + 1);
+            if (first != std::string::npos && second != std::string::npos) {
+                currentRepo = line.substr(first + 1, second - first - 1);
+            }
+        }
+        if (line.find("\"name\":") != std::string::npos) {
+            size_t first = line.find('"', line.find(':'));
+            size_t second = line.find('"', first + 1);
+            if (first != std::string::npos && second != std::string::npos) {
+                currentName = line.substr(first + 1, second - first - 1);
+            }
+        }
+        if (line.find("\"commit\":") != std::string::npos) {
+            size_t first = line.find('"', line.find(':'));
+            size_t second = line.find('"', first + 1);
+            if (first != std::string::npos && second != std::string::npos) {
+                currentCommit = line.substr(first + 1, second - first - 1);
+                if (!currentRepo.empty()) {
+                    packages.push_back({currentName, currentRepo, currentCommit});
+                    currentRepo.clear();
+                    currentName.clear();
+                    currentCommit.clear();
+                }
+            }
+        }
+    }
+    in.close();
+
+    if (packages.empty()) {
+        std::cout << "[SRL PM] 'srl.lock' is empty. No locked dependencies to restore.\n";
+        return;
+    }
+
+    fs::create_directories("srl_modules");
+    std::cout << "[SRL PM] Restoring " << packages.size() << " locked dependencies from 'srl.lock'...\n";
+
+    for (const auto& pkg : packages) {
+        fs::path destPath = fs::path("srl_modules") / pkg.name;
+        if (!fs::exists(destPath)) {
+            std::cout << "[SRL PM] Restoring '" << pkg.repo << "' at commit " << (pkg.commit.length() >= 7 ? pkg.commit.substr(0, 7) : pkg.commit) << "...\n";
+            std::string cloneCmd = "git clone https://github.com/" + pkg.repo + ".git \"" + destPath.string() + "\"";
+            std::system(cloneCmd.c_str());
+            if (pkg.commit != "HEAD") {
+                std::string checkoutCmd = "git -C \"" + destPath.string() + "\" checkout " + pkg.commit + " 2>NUL";
+                std::system(checkoutCmd.c_str());
+            }
+        } else {
+            std::cout << "[SRL PM] Dependency '" << pkg.name << "' is already satisfied.\n";
+        }
+    }
+    std::cout << "[SRL PM] All locked dependencies successfully restored and verified!\n";
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         printUsage();
@@ -114,9 +258,16 @@ int main(int argc, char* argv[]) {
         }
 
         fs::create_directories("srl_modules");
+        if (!fs::exists("srl.lock")) {
+            std::ofstream lockFile("srl.lock");
+            lockFile << "{\n  \"lockfile_version\": 1,\n  \"packages\": {}\n}\n";
+            lockFile.close();
+        }
+
         std::cout << "[Package] Initialized SRL package '" << projName << "' successfully!\n";
         std::cout << "  - Created 'srl.json'\n";
         std::cout << "  - Created 'main.srl'\n";
+        std::cout << "  - Created 'srl.lock'\n";
         std::cout << "  - Created 'srl_modules/' directory\n";
         return 0;
     }
@@ -124,8 +275,8 @@ int main(int argc, char* argv[]) {
     // --- SRL INSTALL ---
     if (arg1 == "install" || arg1 == "add") {
         if (argc < 3) {
-            std::cerr << "[SRL PM Error] Expected package target: srl install <user/repo>\n";
-            return 1;
+            restoreFromLockFile();
+            return 0;
         }
         std::string repoTarget = argv[2];
         std::string pkgName = repoTarget;
@@ -141,7 +292,9 @@ int main(int argc, char* argv[]) {
         std::string cloneCmd = "git clone --depth 1 https://github.com/" + repoTarget + ".git \"" + destPath.string() + "\"";
         int code = std::system(cloneCmd.c_str());
 
+        std::string commitHash = "HEAD";
         if (code == 0) {
+            commitHash = getGitCommitHash(destPath.string());
             std::cout << "[Package] Successfully installed package '" << pkgName << "'!\n";
         } else {
             std::cout << "[Warning] Failed to install package via Git clone. Creating fallback module placeholder...\n";
@@ -152,6 +305,8 @@ int main(int argc, char* argv[]) {
             modMain.close();
             std::cout << "[Package] Module placeholder initialized at " << destPath.string() << "\n";
         }
+
+        updateLockFile(repoTarget, pkgName, commitHash);
         return 0;
     }
 
