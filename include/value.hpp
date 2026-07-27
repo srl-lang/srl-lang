@@ -22,12 +22,32 @@ enum class ValueType {
     FUNCTION,
     NATIVE_FN,
     ARRAY,
-    MAP
+    MAP,
+    WEAK_REF
 };
 
 using NativeFn = std::function<Value(int argCount, const Value* args)>;
 using ArrayPtr = std::shared_ptr<std::vector<Value>>;
 using MapPtr = std::shared_ptr<std::unordered_map<std::string, Value>>;
+using WeakArrayPtr = std::weak_ptr<std::vector<Value>>;
+using WeakMapPtr = std::weak_ptr<std::unordered_map<std::string, Value>>;
+
+struct WeakRefObject {
+    bool isMap = false;
+    WeakMapPtr weakMap;
+    WeakArrayPtr weakArray;
+
+    WeakRefObject(MapPtr map) : isMap(true), weakMap(map) {}
+    WeakRefObject(ArrayPtr arr) : isMap(false), weakArray(arr) {}
+
+    bool isValid() const {
+        return isMap ? !weakMap.expired() : !weakArray.expired();
+    }
+
+    Value lock() const;
+};
+
+using WeakRefPtr = std::shared_ptr<WeakRefObject>;
 
 struct FunctionObject {
     std::string name;
@@ -40,7 +60,7 @@ struct FunctionObject {
 
 struct Value {
     ValueType type = ValueType::NIL;
-    std::variant<std::monostate, bool, double, std::string, std::shared_ptr<FunctionObject>, NativeFn, ArrayPtr, MapPtr> as;
+    std::variant<std::monostate, bool, double, std::string, std::shared_ptr<FunctionObject>, NativeFn, ArrayPtr, MapPtr, WeakRefPtr> as;
 
     Value() : type(ValueType::NIL), as(std::monostate{}) {}
     Value(bool b) : type(ValueType::BOOL), as(b) {}
@@ -52,6 +72,7 @@ struct Value {
     Value(NativeFn nfn) : type(ValueType::NATIVE_FN), as(std::move(nfn)) {}
     Value(ArrayPtr arr) : type(ValueType::ARRAY), as(std::move(arr)) {}
     Value(MapPtr map) : type(ValueType::MAP), as(std::move(map)) {}
+    Value(WeakRefPtr wref) : type(ValueType::WEAK_REF), as(std::move(wref)) {}
 
     bool isNil() const { return type == ValueType::NIL; }
     bool isBool() const { return type == ValueType::BOOL; }
@@ -61,6 +82,7 @@ struct Value {
     bool isNativeFn() const { return type == ValueType::NATIVE_FN; }
     bool isArray() const { return type == ValueType::ARRAY; }
     bool isMap() const { return type == ValueType::MAP; }
+    bool isWeakRef() const { return type == ValueType::WEAK_REF; }
 
     bool asBool() const { return isBool() ? std::get<bool>(as) : false; }
     double asNumber() const { return isNumber() ? std::get<double>(as) : 0.0; }
@@ -79,6 +101,9 @@ struct Value {
     }
     MapPtr asMap() const {
         return isMap() ? std::get<MapPtr>(as) : nullptr;
+    }
+    WeakRefPtr asWeakRef() const {
+        return isWeakRef() ? std::get<WeakRefPtr>(as) : nullptr;
     }
 
     std::string toString() const;

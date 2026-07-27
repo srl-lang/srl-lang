@@ -100,6 +100,33 @@ void VM::registerNativeFunctions() {
         return Value(seconds);
     });
 
+    // --- Weak Reference & Cycle Protection ---
+    defineNative("weak_ref", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0) {
+            if (args[0].isMap()) {
+                return Value(std::make_shared<WeakRefObject>(args[0].asMap()));
+            }
+            if (args[0].isArray()) {
+                return Value(std::make_shared<WeakRefObject>(args[0].asArray()));
+            }
+        }
+        return (argCount > 0) ? args[0] : Value();
+    });
+
+    defineNative("weak_lock", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isWeakRef()) {
+            return args[0].asWeakRef()->lock();
+        }
+        return (argCount > 0) ? args[0] : Value();
+    });
+
+    defineNative("weak_valid", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isWeakRef()) {
+            return Value(args[0].asWeakRef()->isValid());
+        }
+        return Value(false);
+    });
+
     // --- Math Library Operations ---
     defineNative("math_abs", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {

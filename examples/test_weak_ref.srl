@@ -1,0 +1,26 @@
+// Test script for Step 3: weak_ref, weak_lock, weak_valid
+
+print("=== WEAK REFERENCE TEST ===");
+
+var parent = map_new();
+map_set(parent, "name", "Parent Node");
+
+var child = map_new();
+map_set(child, "name", "Child Node");
+
+// Strong reference: parent -> child
+map_set(parent, "child", child);
+
+// Weak reference: child -> parent (prevents ARC cycle memory leak)
+var wref_parent = weak_ref(parent);
+map_set(child, "parent_ref", wref_parent);
+
+print("Parent Name: " + map_get(parent, "name"));
+print("Child Name: " + map_get(child, "name"));
+
+print("Weak Ref Valid? " + to_string(weak_valid(wref_parent)));
+
+var locked_parent = weak_lock(wref_parent);
+print("Resolved Parent Name via weak_lock: " + map_get(locked_parent, "name"));
+
+print("\n=== WEAK REFERENCE VERIFICATION COMPLETED SUCCESSFULLY ===");

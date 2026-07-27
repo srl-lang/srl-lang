@@ -8,6 +8,17 @@ namespace srl {
 FunctionObject::FunctionObject() : chunk(std::make_shared<Chunk>()) {}
 FunctionObject::~FunctionObject() = default;
 
+Value WeakRefObject::lock() const {
+    if (isMap) {
+        auto locked = weakMap.lock();
+        if (locked) return Value(locked);
+    } else {
+        auto locked = weakArray.lock();
+        if (locked) return Value(locked);
+    }
+    return Value(); // nil if deallocated
+}
+
 std::string Value::toString() const {
     switch (type) {
         case ValueType::NIL: return "nil";
@@ -24,6 +35,7 @@ std::string Value::toString() const {
         case ValueType::STRING: return asString();
         case ValueType::FUNCTION: return "<fn " + asFunction()->name + ">";
         case ValueType::NATIVE_FN: return "<native fn>";
+        case ValueType::WEAK_REF: return "<weak_ref " + std::string(asWeakRef()->isValid() ? "valid" : "expired") + ">";
         case ValueType::ARRAY: {
             std::string res = "[";
             auto arr = asArray();
@@ -58,6 +70,7 @@ bool Value::isTruthy() const {
         case ValueType::STRING: return !asString().empty();
         case ValueType::ARRAY: return !asArray()->empty();
         case ValueType::MAP: return !asMap()->empty();
+        case ValueType::WEAK_REF: return asWeakRef()->isValid();
         default: return true;
     }
 }
@@ -71,6 +84,7 @@ bool Value::equals(const Value& other) const {
         case ValueType::STRING: return asString() == other.asString();
         case ValueType::ARRAY: return asArray() == other.asArray();
         case ValueType::MAP: return asMap() == other.asMap();
+        case ValueType::WEAK_REF: return asWeakRef() == other.asWeakRef();
         default: return false;
     }
 }
