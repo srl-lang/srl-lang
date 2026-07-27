@@ -62,20 +62,20 @@ fn assert_nil(val, test_name) {
 
 fn test_suite(suite_name) {
     print("\n========================================================");
-    print(" 🧪 RUNNING TEST SUITE: " + suite_name);
+    print(" RUNNING TEST SUITE: " + suite_name);
     print("========================================================");
 }
 
 fn test_summary() {
     print("\n--------------------------------------------------------");
-    print(" 📊 TEST RESULTS:");
+    print(" TEST RESULTS:");
     print("  Total Tests  : " + to_string(__test_total_count));
     print("  Passed Tests : " + to_string(__test_passed_count));
     print("  Failed Tests : " + to_string(__test_failed_count));
     print("--------------------------------------------------------\n");
     if __test_failed_count == 0 {
-        print("🎉 ALL TESTS PASSED SUCCESSFULLY!\n");
+        print("ALL TESTS PASSED SUCCESSFULLY!\n");
     } else {
-        print("❌ TEST SUITE FAILED WITH " + to_string(__test_failed_count) + " ERRORS.\n");
+        print("TEST SUITE FAILED WITH " + to_string(__test_failed_count) + " ERRORS.\n");
     }
 }

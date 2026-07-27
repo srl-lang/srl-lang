@@ -6,7 +6,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 1. [Introduction & Language Philosophy](#1-introduction--language-philosophy)
 2. [Basic Syntax & Data Types](#2-basic-syntax--data-types)
 3. [Control Flow & Loops](#3-control-flow--loops)

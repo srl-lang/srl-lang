@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     // --- SRL BOOTSTRAP ---
     if (arg1 == "bootstrap") {
         std::cout << "========================================================\n";
-        std::cout << " 🔄 SRL Self-Hosting Bootstrapping Test\n";
+        std::cout << " SRL Self-Hosting Bootstrapping Test\n";
         std::cout << "========================================================\n";
         std::cout << "[SRL Bootstrap] Compiling 'compiler/srlc.srl' using 'compiler/srlc.srl'...\n";
         std::string src = readFile("compiler/srlc.srl");
@@ -109,12 +109,12 @@ int main(int argc, char* argv[]) {
             std::ofstream mainFile("main.srl");
             mainFile << "// SRL Project Entry Point\n";
             mainFile << "import(\"std/math.srl\");\n\n";
-            mainFile << "print(\"🚀 Welcome to " << projName << " powered by SRL!\");\n";
+            mainFile << "print(\"Welcome to " << projName << " powered by SRL!\");\n";
             mainFile.close();
         }
 
         fs::create_directories("srl_modules");
-        std::cout << "✨ Initialized SRL package '" << projName << "' successfully!\n";
+        std::cout << "[Package] Initialized SRL package '" << projName << "' successfully!\n";
         std::cout << "  - Created 'srl.json'\n";
         std::cout << "  - Created 'main.srl'\n";
         std::cout << "  - Created 'srl_modules/' directory\n";
@@ -142,15 +142,15 @@ int main(int argc, char* argv[]) {
         int code = std::system(cloneCmd.c_str());
 
         if (code == 0) {
-            std::cout << "✅ Successfully installed package '" << pkgName << "'!\n";
+            std::cout << "[Package] Successfully installed package '" << pkgName << "'!\n";
         } else {
-            std::cout << "⚠️ Failed to install package via Git clone. Creating fallback module placeholder...\n";
+            std::cout << "[Warning] Failed to install package via Git clone. Creating fallback module placeholder...\n";
             fs::create_directories(destPath);
             std::ofstream modMain(destPath / "main.srl");
             modMain << "// SRL Module Placeholder for " << pkgName << "\n";
             modMain << "print(\"Loaded module: " << pkgName << "\");\n";
             modMain.close();
-            std::cout << "✅ Module placeholder initialized at " << destPath.string() << "\n";
+            std::cout << "[Package] Module placeholder initialized at " << destPath.string() << "\n";
         }
         return 0;
     }
@@ -220,13 +220,13 @@ int main(int argc, char* argv[]) {
             }
 
             if (testFiles.empty()) {
-                std::cout << "🔍 No test files found matching '*.test.srl' or '*_test.srl'.\n";
+                std::cout << "[Test] No test files found matching '*.test.srl' or '*_test.srl'.\n";
                 std::cout << "Usage: srl test <file.test.srl>\n";
                 return 0;
             }
 
             for (const auto& tf : testFiles) {
-                std::cout << "\n🚀 Executing Test File: " << tf << "\n";
+                std::cout << "\n[Test] Executing Test File: " << tf << "\n";
                 std::string src = readFile(tf);
                 vm.interpret(src);
             }
@@ -247,7 +247,7 @@ int main(int argc, char* argv[]) {
         std::string filePath = argv[2];
         std::string source = readFile(filePath);
 
-        std::cout << "⏱️ Running benchmark for '" << filePath << "'...\n";
+        std::cout << "[Bench] Running benchmark for '" << filePath << "'...\n";
         auto start = std::chrono::high_resolution_clock::now();
 
         srl::VM vm;
@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
         auto elapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
         std::cout << "\n--------------------------------------------------------\n";
-        std::cout << " ⚡ BENCHMARK METRICS:\n";
+        std::cout << " BENCHMARK METRICS:\n";
         std::cout << "  Execution Time : " << elapsedMs << " ms (" << elapsedUs << " µs)\n";
         std::cout << "  Status         : Completed cleanly\n";
         std::cout << "--------------------------------------------------------\n" << std::endl;
@@ -269,7 +269,7 @@ int main(int argc, char* argv[]) {
     // --- SRL PM ---
     if (arg1 == "pm") {
         std::cout << "========================================================\n";
-        std::cout << " 📦 SRL Package Manager (srl pm)\n";
+        std::cout << " SRL Package Manager (srl pm)\n";
         std::cout << "========================================================\n";
         std::cout << "Commands:\n";
         std::cout << "  srl init [name]         Create new srl.json package\n";
@@ -301,7 +301,7 @@ int main(int argc, char* argv[]) {
         std::string source = readFile(filePath);
         srl::VM vm;
 
-        std::cout << "🔥 Running in LIVE HOT-RELOAD mode. Listening for changes to '" << filePath << "'..." << std::endl;
+        std::cout << "[Live] Running in LIVE HOT-RELOAD mode. Listening for changes to '" << filePath << "'..." << std::endl;
         
         srl::FileWatcher watcher(filePath, [&vm](const std::string& newSource) {
             vm.interpret(newSource);
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
         std::ofstream outfile(outPath);
         outfile << outCode.str();
         outfile.close();
-        std::cout << "✨ Successfully generated " << boundCount << " C function bindings in '" << outPath << "'!\n";
+        std::cout << "[Bind] Successfully generated " << boundCount << " C function bindings in '" << outPath << "'!\n";
         return 0;
     }
 
@@ -405,7 +405,7 @@ int main(int argc, char* argv[]) {
     srl::VM vm;
 
     if (watchMode) {
-        std::cout << "🔥 Running in LIVE HOT-RELOAD mode. Listening for changes to '" << filePath << "'..." << std::endl;
+        std::cout << "[Live] Running in LIVE HOT-RELOAD mode. Listening for changes to '" << filePath << "'..." << std::endl;
         srl::FileWatcher watcher(filePath, [&vm](const std::string& newSource) {
             vm.interpret(newSource);
         });

@@ -8,7 +8,7 @@ import("compiler/codegen_llvm.srl");
 import("std/env.srl");
 
 print("========================================================");
-print(" 🚀 srlc - SRL Self-Hosted Compiler (Bootstrapped)");
+print(" srlc - SRL Self-Hosted Compiler (Bootstrapped)");
 print("========================================================");
 
 fn srlc_compile_file(input_path, output_path) {
@@ -39,7 +39,7 @@ fn srlc_compile_file(input_path, output_path) {
     var compile_res = sys_exec(clang_cmd);
 
     print("\n========================================================");
-    print(" 🎉 SELF-HOSTED COMPILATION COMPLETE!");
+    print(" SELF-HOSTED COMPILATION COMPLETE!");
     print("  - Generated LLVM IR: " + ll_path);
     print("  - Output Binary:     " + output_path);
     print("========================================================");

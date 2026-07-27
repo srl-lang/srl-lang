@@ -8,29 +8,29 @@ Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hos
 
 ---
 
-## 📚 Documentation & Specifications
+## Documentation & Specifications
 
 All technical specifications, manuals, and developer guidelines are organized in the [`docs/`](docs/) directory:
 
-- 📑 **[Technical Specification Manual](docs/SRL_LANGUAGE_MANUAL.md):** Complete technical manual covering VM architecture, compiler pipeline, memory management, exception handling, generics, and RTTI.
-- 📐 **[Formal EBNF Syntax Grammar](docs/ebnf_grammar.md):** Formal Extended Backus-Naur Form grammar specification for compiler and parser implementers.
-- 🔌 **[API & Stdlib Reference](docs/api_reference.md):** Comprehensive reference for standard library functions and CLI commands.
+- **[Technical Specification Manual](docs/SRL_LANGUAGE_MANUAL.md):** Complete technical manual covering VM architecture, compiler pipeline, memory management, exception handling, generics, and RTTI.
+- **[Formal EBNF Syntax Grammar](docs/ebnf_grammar.md):** Formal Extended Backus-Naur Form grammar specification for compiler and parser implementers.
+- **[API & Stdlib Reference](docs/api_reference.md):** Comprehensive reference for standard library functions and CLI commands.
 
 ---
 
-## 🔥 Core Capabilities
+## Core Capabilities
 
-- **🔌 Universal C/C++ Interoperability:** Call any C dynamic library (`.dll`, `.so`, `.dylib`) directly with `std/c.srl`, auto-generate SRL wrappers from `.h` headers using `srl bind`, or build native C++ extensions via `srl_plugin.h`.
-- **🚀 Self-Hosted Compiler (`srlc.srl`):** Bootstrapped compiler written entirely in SRL that tokenizes code, builds ASTs, and generates standalone LLVM IR binaries (`.ll` / `.exe`).
-- **🔥 Live Zero-Downtime Hot-Reloading (`srl watch`):** Modify `.srl` scripts on-the-fly while retaining active global runtime variable states. Ideal for live audio synthesis.
-- **🎵 Built-in DSP & FFT Engine:** Native Fast Fourier Transform (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), IIR filters, and terminal ASCII plotting (`dsp_plot`).
-- **🖥️ Native Desktop Qt GUI (`std/qt.srl`):** Create desktop windows, widgets, and graphical dashboards directly from SRL scripts.
-- **📦 Package Manager (`srl pm`):** Project initialization (`srl init`) and GitHub package resolution (`srl install user/repo`) into `srl_modules/`.
-- **🧪 Integrated Testing & Benchmarking:** Unit test runner (`srl test`) and microsecond-precision performance benchmark engine (`srl bench`).
+- **Universal C/C++ Interoperability:** Call any C dynamic library (`.dll`, `.so`, `.dylib`) directly with `std/c.srl`, auto-generate SRL wrappers from `.h` headers using `srl bind`, or build native C++ extensions via `srl_plugin.h`.
+- **Self-Hosted Compiler (`srlc.srl`):** Bootstrapped compiler written entirely in SRL that tokenizes code, builds ASTs, and generates standalone LLVM IR binaries (`.ll` / `.exe`).
+- **Live Zero-Downtime Hot-Reloading (`srl watch`):** Modify `.srl` scripts on-the-fly while retaining active global runtime variable states. Ideal for live audio synthesis.
+- **Built-in DSP & FFT Engine:** Native Fast Fourier Transform (`dsp_fft`, `dsp_ifft`), signal generators (Sine, Square, Noise), windowing (Hann, Hamming), IIR filters, and terminal ASCII plotting (`dsp_plot`).
+- **Native Desktop Qt GUI (`std/qt.srl`):** Create desktop windows, widgets, and graphical dashboards directly from SRL scripts.
+- **Package Manager (`srl pm`):** Project initialization (`srl init`) and GitHub package resolution (`srl install user/repo`) into `srl_modules/`.
+- **Integrated Testing & Benchmarking:** Unit test runner (`srl test`) and microsecond-precision performance benchmark engine (`srl bench`).
 
 ---
 
-## 🛠️ CLI Usage Guide
+## CLI Usage Guide
 
 | Command | Description |
 | :--- | :--- |
@@ -47,7 +47,7 @@ All technical specifications, manuals, and developer guidelines are organized in
 
 ---
 
-## 💡 Code Examples
+## Code Examples
 
 ### 1. Universal C Library Call & Memory Allocation
 
@@ -113,16 +113,16 @@ print(v.y);  // 99.0
 
 ---
 
-## 📋 Changelog
+## Changelog
 
 ### v0.2.1
-- ✅ **`for` loop** — C-style `for (init; cond; incr)` loop added to lexer, parser and compiler
-- ✅ **Dot-access** — `obj.field` read/write syntax replaces `map_get`/`map_set` for struct fields
-- ✅ **Line-numbered errors** — Runtime error messages now include `[Line X]` source location
-- ✅ **Float modulo** — `%` operator now uses `fmod()` for correct float behaviour (e.g. `3.7 % 1.2`)
-- ✅ **English-only codebase** — All source code, comments, and example strings are now in English
+- **`for` loop** — C-style `for (init; cond; incr)` loop added to lexer, parser and compiler
+- **Dot-access** — `obj.field` read/write syntax replaces `map_get`/`map_set` for struct fields
+- **Line-numbered errors** — Runtime error messages now include `[Line X]` source location
+- **Float modulo** — `%` operator now uses `fmod()` for correct float behaviour (e.g. `3.7 % 1.2`)
+- **English-only codebase** — All source code, comments, and example strings are now in English
 
-## 🧩 VS Code IDE Extension
+## VS Code IDE Extension
 
 Language support extension located in `srl-vscode-extension`:
 - Syntax Highlighting (`.srl`)
@@ -131,6 +131,6 @@ Language support extension located in `srl-vscode-extension`:
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for details.

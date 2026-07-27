@@ -49,7 +49,7 @@ void FileWatcher::runLoop() {
                     lastWriteTime_ = currentWriteTime;
                     std::string newContent = readFileContent();
                     if (!newContent.empty()) {
-                        std::cout << "\n⚡ [Hot-Reload] File change detected in '" << filePath_ << "'. Patching live code..." << std::endl;
+                        std::cout << "\n[Hot-Reload] File change detected in '" << filePath_ << "'. Patching live code..." << std::endl;
                         callback_(newContent);
                     }
                 }
