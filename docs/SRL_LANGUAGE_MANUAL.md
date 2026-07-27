@@ -1,6 +1,6 @@
-# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.2.1 Technical Standard)
+# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.3.0 Technical Standard)
 
-**Version:** `v0.2.1`  
+**Version:** `v0.3.0`  
 **License:** GNU General Public License v3.0 (GPLv3)  
 **Execution Model:** C++ Bytecode Virtual Machine (Interpreter & Live Hot-Reloading) & Self-Hosted LLVM IR Compiler (`compiler/srlc.srl`)  
 **Design Scope:** High-performance Digital Signal Processing (DSP), Real-Time Fast Fourier Transform (FFT) Analysis, Native Desktop Qt GUI Applications, Live Zero-Downtime Hot-Reloading, and Standalone x86_64/ARM64 Executable Code Generation.

@@ -1,6 +1,6 @@
 # SRL (Serial Run Language) - Comprehensive Language Specification & Architecture Manual
 
-**Version:** `v0.2.1`  
+**Version:** `v0.3.0`  
 **Architecture:** C++ Bytecode Virtual Machine (VM) & LLVM IR Ahead-of-Time (AOT) Standalone Compiler (`srlc`)  
 **License:** GNU General Public License v3.0 (GPLv3)
 
@@ -9,7 +9,7 @@
 ## Table of Contents
 1. [Introduction & Language Philosophy](#1-introduction--language-philosophy)
 2. [Basic Syntax & Data Types](#2-basic-syntax--data-types)
-3. [Control Flow & Loops](#3-control-flow--loops)
+3. [Control Flow, Loops & Pattern Matching](#3-control-flow-loops--pattern-matching)
 4. [Functions & Scope](#4-functions--scope)
 5. [Arrays & Maps](#5-arrays--maps)
 6. [Structs & Dot-Access Syntax](#6-structs--dot-access-syntax)
@@ -56,14 +56,14 @@ var channel_name = "Left";       // String
 var is_active = true;            // Bool
 var empty_val = nil;             // Nil
 
-// String Concatenation & Type Conversion
-var message = channel_name + " -> Frequency: " + to_string(audio_freq) + " Hz";
+// String Interpolation (v0.3.0)
+var message = "${channel_name} -> Frequency: ${audio_freq} Hz";
 print(message);
 ```
 
 ---
 
-## 3. Control Flow & Loops
+## 3. Control Flow, Loops & Pattern Matching
 
 ### Conditional Statements (`if` / `else`):
 ```srl
@@ -80,16 +80,48 @@ if amplitude > 0.8 {
 ```srl
 var i = 0;
 while i < 5 {
-    print("Step: " + to_string(i));
+    print("Step: ${i}");
     i = i + 1;
 }
 ```
 
-### `for` Loop (v0.2.1):
+### C-Style `for` Loop:
 ```srl
 for (var i = 0; i < 5; i = i + 1) {
-    print("Index: " + to_string(i));
+    print("Index: ${i}");
 }
+```
+
+### Foreach `in` Loops (v0.3.0):
+```srl
+// Array iteration
+var items = arr_new();
+arr_push(items, "apple");
+arr_push(items, "banana");
+
+for (var item in items) {
+    print("Item: ${item}");
+}
+
+// Map key-value iteration
+var config = map_new();
+map_set(config, "name", "SRL");
+map_set(config, "version", "0.3.0");
+
+for (var key, val in config) {
+    print("${key} = ${val}");
+}
+```
+
+### Pattern Matching `match` Expression (v0.3.0):
+```srl
+var status = 200;
+var response = match (status) {
+    case 200 => "OK",
+    case 404 => "Not Found",
+    default => "Unknown Error"
+};
+print("Status Result: ${response}");
 ```
 
 ---

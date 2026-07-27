@@ -21,6 +21,9 @@ Generated automatically by `srl doc` on Jul 27 2026
 - `queue_new()`, `queue_push()`, `queue_pop()` - FIFO queue structure
 - `stack_new()`, `stack_push()`, `stack_pop()` - LIFO stack structure
 - `ringbuffer_new()`, `ringbuffer_write()` - Circular audio buffer
+- `map_keys(map)` - Returns array of keys for map iteration
+- `is_map(val)` - Returns true if value is a map
+- `is_array(val)` - Returns true if value is an array
 
 ### 4. Concurrency & Synchronization (`std/sync.srl`)
 - `mutex_create()`, `mutex_lock()`, `mutex_unlock()` - Thread mutex lock

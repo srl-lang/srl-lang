@@ -1,10 +1,10 @@
 # SRL (Serial Run Language) - Formal EBNF Grammar Specification
 
-This document defines the normative **Extended Backus-Naur Form (EBNF)** syntax grammar for SRL v0.2.1. Compiler implementers, parser developers, and IDE tooling authors should use this grammar as the authoritative source for syntax validation.
+This document defines the normative **Extended Backus-Naur Form (EBNF)** syntax grammar for SRL v0.3.0. Compiler implementers, parser developers, and IDE tooling authors should use this grammar as the authoritative source for syntax validation.
 
 ```ebnf
 (* ============================================================================ *)
-(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.2.1)               *)
+(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.3.0)               *)
 (* ============================================================================ *)
 
 Program         ::= { Statement } ;
@@ -31,12 +31,13 @@ EnumDecl        ::= "enum" Identifier "{" Identifiers "}" ;
 
 IfStmt          ::= "if" Expression Block [ "else" ( IfStmt | Block ) ] ;
 WhileStmt       ::= "while" Expression Block ;
-ForStmt         ::= "for" "(" ForInit ";" [ Expression ] ";" [ Expression ] ")" Block ;
+ForStmt         ::= "for" "(" ( ForInit ";" [ Expression ] ";" [ Expression ] | ForInInit ) ")" Block ;
 ForInit         ::= VarDecl | ExprStmt | "" ;
+ForInInit       ::= "var" Identifier [ "," Identifier ] "in" Expression ;
 ReturnStmt      ::= "return" [ Expression ] ";" ;
 TryCatchStmt    ::= "try" Block "catch" Identifier Block ;
-MatchStmt       ::= "match" Expression "{" { MatchArm } "}" ;
-MatchArm        ::= ( Pattern | "_" ) "=>" ( Expression | Block ) [ "," ] ;
+MatchStmt       ::= "match" "(" Expression ")" "{" { MatchArm } "}" ;
+MatchArm        ::= ( "case" Pattern | "default" | "_" ) "=>" ( Expression | Block ) [ "," | ";" ] ;
 
 ImportStmt      ::= "import" "(" StringLiteral ")" ";" ;
 ExprStmt        ::= Expression ";" ;
