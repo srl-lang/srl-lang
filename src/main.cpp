@@ -24,7 +24,7 @@ static std::string readFile(const std::string& path) {
 
 static void printUsage() {
     std::cout << "========================================================\n";
-    std::cout << "  SRL Toolchain & Self-Hosted Compiler v0.1.0\n";
+    std::cout << "  SRL Toolchain & Self-Hosted Compiler v0.3.0\n";
     std::cout << "========================================================\n";
     std::cout << "Usage:\n";
     std::cout << "  srl run <file.srl> [--jit]      Run SRL script in Bytecode VM or JIT mode\n";
@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (arg1 == "version" || arg1 == "-v" || arg1 == "--version") {
-        std::cout << "SRL Language Toolchain v0.1.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM + JIT Engine)\n";
+        std::cout << "SRL Language Toolchain v0.3.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM + JIT Engine)\n";
         return 0;
     }
 
