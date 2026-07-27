@@ -25,3 +25,7 @@ temp_generated.cpp
 .vs/
 *.user
 *.suo
+
+# Local AI Agent Config & Rules
+.agents/
+
