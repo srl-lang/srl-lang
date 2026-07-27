@@ -35,7 +35,19 @@ enum class OpCode : uint8_t {
     OP_JUMP_IF_FALSE,
     OP_LOOP,
     OP_CALL,
-    OP_RETURN
+    OP_RETURN,
+    OP_GET_FIELD,
+    OP_SET_FIELD,
+    OP_TRY,
+    OP_CATCH,
+    OP_THROW,
+    OP_ASYNC_CALL,
+    OP_AWAIT,
+    OP_BITWISE_AND,
+    OP_BITWISE_OR,
+    OP_BITWISE_XOR,
+    OP_BUILD_ARRAY,
+    OP_BUILD_MAP
 };
 
 struct Chunk {

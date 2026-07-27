@@ -25,6 +25,7 @@ enum class ASTNodeType {
     GET_FIELD_EXPR,
     SET_FIELD_EXPR,
     MATCH_EXPR,
+    AWAIT_EXPR,
 
     // Statements
     EXPRESSION_STMT,
@@ -35,7 +36,9 @@ enum class ASTNodeType {
     FOR_STMT,
     RETURN_STMT,
     FUNCTION_STMT,
-    STRUCT_STMT
+    STRUCT_STMT,
+    TRY_CATCH_STMT,
+    THROW_STMT
 };
 
 struct ASTNode {
@@ -168,12 +171,20 @@ struct ReturnStmt : public Stmt {
     ASTNodeType getType() const override { return ASTNodeType::RETURN_STMT; }
 };
 
+struct AwaitExpr : public Expr {
+    Token keyword;
+    ExprPtr value;
+    AwaitExpr(Token keyword, ExprPtr val) : keyword(std::move(keyword)), value(std::move(val)) {}
+    ASTNodeType getType() const override { return ASTNodeType::AWAIT_EXPR; }
+};
+
 struct FunctionStmt : public Stmt {
     Token name;
     std::vector<Token> params;
     std::vector<StmtPtr> body;
-    FunctionStmt(Token name, std::vector<Token> params, std::vector<StmtPtr> body)
-        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
+    bool isAsync;
+    FunctionStmt(Token name, std::vector<Token> params, std::vector<StmtPtr> body, bool isAsync = false)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)), isAsync(isAsync) {}
     ASTNodeType getType() const override { return ASTNodeType::FUNCTION_STMT; }
 };
 
@@ -183,6 +194,22 @@ struct StructStmt : public Stmt {
     StructStmt(Token name, std::vector<Token> fields)
         : name(std::move(name)), fields(std::move(fields)) {}
     ASTNodeType getType() const override { return ASTNodeType::STRUCT_STMT; }
+};
+
+struct TryCatchStmt : public Stmt {
+    StmtPtr tryBranch;
+    Token catchVar;
+    StmtPtr catchBranch;
+    TryCatchStmt(StmtPtr tryB, Token catchVar, StmtPtr catchB)
+        : tryBranch(std::move(tryB)), catchVar(std::move(catchVar)), catchBranch(std::move(catchB)) {}
+    ASTNodeType getType() const override { return ASTNodeType::TRY_CATCH_STMT; }
+};
+
+struct ThrowStmt : public Stmt {
+    Token keyword;
+    ExprPtr expression;
+    ThrowStmt(Token keyword, ExprPtr expr) : keyword(std::move(keyword)), expression(std::move(expr)) {}
+    ASTNodeType getType() const override { return ASTNodeType::THROW_STMT; }
 };
 
 // for (init; condition; increment) body

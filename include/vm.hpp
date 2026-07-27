@@ -23,6 +23,12 @@ struct CallFrame {
     size_t stackOffset = 0;
 };
 
+struct TryFrame {
+    size_t frameDepth;
+    size_t stackDepth;
+    size_t catchIp;
+};
+
 class VM {
 public:
     VM();
@@ -38,6 +44,7 @@ private:
     Environment env_;
     std::vector<Value> stack_;
     std::vector<CallFrame> frames_;
+    std::vector<TryFrame> tryStack_;
     std::unordered_set<std::string> loadedModules_;
 
     void push(Value value);

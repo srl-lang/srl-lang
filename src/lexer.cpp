@@ -19,7 +19,12 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"true", TokenType::KEYWORD_TRUE},
     {"false", TokenType::KEYWORD_FALSE},
     {"nil", TokenType::KEYWORD_NIL},
-    {"struct", TokenType::KEYWORD_STRUCT}
+    {"struct", TokenType::KEYWORD_STRUCT},
+    {"async", TokenType::KEYWORD_ASYNC},
+    {"await", TokenType::KEYWORD_AWAIT},
+    {"try", TokenType::KEYWORD_TRY},
+    {"catch", TokenType::KEYWORD_CATCH},
+    {"throw", TokenType::KEYWORD_THROW}
 };
 
 Lexer::Lexer(std::string source) : source_(std::move(source)) {}

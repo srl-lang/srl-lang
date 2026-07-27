@@ -35,7 +35,11 @@ std::vector<StmtPtr> Parser::parse() {
 }
 
 StmtPtr Parser::declaration() {
-    if (match({TokenType::KEYWORD_FN})) return functionDeclaration();
+    if (match({TokenType::KEYWORD_ASYNC})) {
+        consume(TokenType::KEYWORD_FN, "Expect 'fn' after 'async'.");
+        return functionDeclaration(true);
+    }
+    if (match({TokenType::KEYWORD_FN})) return functionDeclaration(false);
     if (match({TokenType::KEYWORD_VAR})) return varDeclaration(false);
     if (match({TokenType::KEYWORD_CONST})) return varDeclaration(true);
     if (match({TokenType::KEYWORD_STRUCT})) return structDeclaration();
@@ -57,7 +61,7 @@ StmtPtr Parser::structDeclaration() {
     return std::make_unique<StructStmt>(std::move(name), std::move(fields));
 }
 
-StmtPtr Parser::functionDeclaration() {
+StmtPtr Parser::functionDeclaration(bool isAsync) {
     Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
     consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
     
@@ -82,7 +86,7 @@ StmtPtr Parser::functionDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after function body.");
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(body));
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(body), isAsync);
 }
 
 StmtPtr Parser::varDeclaration(bool isConst) {
@@ -109,8 +113,25 @@ StmtPtr Parser::statement() {
     if (match({TokenType::KEYWORD_WHILE})) return whileStatement();
     if (match({TokenType::KEYWORD_FOR})) return forStatement();
     if (match({TokenType::KEYWORD_RETURN})) return returnStatement();
+    if (match({TokenType::KEYWORD_TRY})) return tryCatchStatement();
+    if (match({TokenType::KEYWORD_THROW})) return throwStatement();
     if (match({TokenType::LEFT_BRACE})) return blockStatement();
     return expressionStatement();
+}
+
+StmtPtr Parser::tryCatchStatement() {
+    StmtPtr tryBranch = statement();
+    consume(TokenType::KEYWORD_CATCH, "Expect 'catch' after try block.");
+    Token catchVar = consume(TokenType::IDENTIFIER, "Expect catch variable name.");
+    StmtPtr catchBranch = statement();
+    return std::make_unique<TryCatchStmt>(std::move(tryBranch), std::move(catchVar), std::move(catchBranch));
+}
+
+StmtPtr Parser::throwStatement() {
+    Token keyword = previous();
+    ExprPtr expr = expression();
+    match({TokenType::SEMICOLON});
+    return std::make_unique<ThrowStmt>(std::move(keyword), std::move(expr));
 }
 
 StmtPtr Parser::blockStatement() {
@@ -389,6 +410,11 @@ ExprPtr Parser::factor() {
 }
 
 ExprPtr Parser::unary() {
+    if (match({TokenType::KEYWORD_AWAIT})) {
+        Token keyword = previous();
+        ExprPtr right = unary();
+        return std::make_unique<AwaitExpr>(std::move(keyword), std::move(right));
+    }
     if (match({TokenType::BANG, TokenType::MINUS})) {
         Token op = previous();
         ExprPtr right = unary();

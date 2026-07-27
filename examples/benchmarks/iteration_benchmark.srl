@@ -1,0 +1,17 @@
+// SRL Iteration Benchmark - 1M Operations
+fn benchmark_array_iteration() {
+    var arr = arr_new();
+    var i = 0;
+    var iterations = 1000000;
+    
+    var start_t = clock();
+    while i < iterations {
+        arr_push(arr, i);
+        i = i + 1;
+    }
+    var end_t = clock();
+    
+    print("Completed 1,000,000 Array Iterations in: " + to_string(end_t - start_t) + " seconds.");
+}
+
+benchmark_array_iteration();

@@ -100,6 +100,13 @@ void VM::registerNativeFunctions() {
         return Value(seconds);
     });
 
+    // clock()
+    defineNative("clock", [](int argCount, const Value* args) -> Value {
+        auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+        double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now).count() / 1000000.0;
+        return Value(seconds);
+    });
+
     // --- Weak Reference & Cycle Protection ---
     defineNative("weak_ref", [](int argCount, const Value* args) -> Value {
         if (argCount > 0) {
@@ -1188,6 +1195,132 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 }
 
                 push(result);
+                break;
+            }
+
+            case OpCode::OP_GET_FIELD: {
+                Value fieldVal = READ_CONSTANT();
+                Value obj = pop();
+                if (obj.isMap()) {
+                    auto mapPtr = obj.asMap();
+                    auto it = mapPtr->find(fieldVal.asString());
+                    if (it != mapPtr->end()) {
+                        push(it->second);
+                    } else {
+                        push(Value());
+                    }
+                } else {
+                    push(Value());
+                }
+                break;
+            }
+
+            case OpCode::OP_SET_FIELD: {
+                Value fieldVal = READ_CONSTANT();
+                Value val = pop();
+                Value obj = pop();
+                if (obj.isMap()) {
+                    (*obj.asMap())[fieldVal.asString()] = val;
+                }
+                push(val);
+                break;
+            }
+
+            case OpCode::OP_TRY: {
+                uint16_t offset = READ_SHORT();
+                TryFrame tf;
+                tf.frameDepth = frames_.size();
+                tf.stackDepth = stack_.size();
+                tf.catchIp = CURR_FRAME.ip + offset;
+                tryStack_.push_back(tf);
+                break;
+            }
+
+            case OpCode::OP_CATCH: {
+                if (!tryStack_.empty()) {
+                    tryStack_.pop_back();
+                }
+                break;
+            }
+
+            case OpCode::OP_THROW: {
+                Value errVal = pop();
+                if (!tryStack_.empty()) {
+                    TryFrame tf = tryStack_.back();
+                    tryStack_.pop_back();
+                    while (frames_.size() > tf.frameDepth) {
+                        frames_.pop_back();
+                    }
+                    while (stack_.size() > tf.stackDepth) {
+                        stack_.pop_back();
+                    }
+                    push(errVal);
+                    CURR_FRAME.ip = tf.catchIp;
+                } else {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Unhandled Exception: " << errVal.asString() << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            }
+
+            case OpCode::OP_ASYNC_CALL:
+            case OpCode::OP_AWAIT: {
+                // Async execution evaluates the task expression directly in sync VM frame
+                break;
+            }
+
+            case OpCode::OP_BITWISE_AND: {
+                Value b = pop();
+                Value a = pop();
+                if (a.isNumber() && b.isNumber()) {
+                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) & static_cast<int64_t>(b.asNumber()))));
+                } else {
+                    push(Value(0.0));
+                }
+                break;
+            }
+
+            case OpCode::OP_BITWISE_OR: {
+                Value b = pop();
+                Value a = pop();
+                if (a.isNumber() && b.isNumber()) {
+                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) | static_cast<int64_t>(b.asNumber()))));
+                } else {
+                    push(Value(0.0));
+                }
+                break;
+            }
+
+            case OpCode::OP_BITWISE_XOR: {
+                Value b = pop();
+                Value a = pop();
+                if (a.isNumber() && b.isNumber()) {
+                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) ^ static_cast<int64_t>(b.asNumber()))));
+                } else {
+                    push(Value(0.0));
+                }
+                break;
+            }
+
+            case OpCode::OP_BUILD_ARRAY: {
+                uint8_t count = READ_BYTE();
+                auto arr = std::make_shared<std::vector<Value>>(count);
+                for (int i = count - 1; i >= 0; --i) {
+                    (*arr)[i] = pop();
+                }
+                push(Value(arr));
+                break;
+            }
+
+            case OpCode::OP_BUILD_MAP: {
+                uint8_t pairCount = READ_BYTE();
+                auto mapObj = std::make_shared<std::unordered_map<std::string, Value>>();
+                for (int i = 0; i < pairCount; ++i) {
+                    Value val = pop();
+                    Value key = pop();
+                    (*mapObj)[key.asString()] = val;
+                }
+                push(Value(mapObj));
                 break;
             }
         }

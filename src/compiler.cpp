@@ -331,6 +331,27 @@ void Compiler::compileStmt(const Stmt* stmt) {
             endScope(0);
             break;
         }
+
+        case ASTNodeType::TRY_CATCH_STMT: {
+            auto tryCatch = static_cast<const TryCatchStmt*>(stmt);
+            size_t tryJump = emitJump(OpCode::OP_TRY, 0);
+            compileStmt(tryCatch->tryBranch.get());
+            size_t endJump = emitJump(OpCode::OP_JUMP, 0);
+            patchJump(tryJump);
+            beginScope();
+            declareVariable(tryCatch->catchVar);
+            compileStmt(tryCatch->catchBranch.get());
+            endScope(0);
+            patchJump(endJump);
+            break;
+        }
+
+        case ASTNodeType::THROW_STMT: {
+            auto throwStmt = static_cast<const ThrowStmt*>(stmt);
+            compileExpr(throwStmt->expression.get());
+            emitOp(OpCode::OP_THROW, throwStmt->keyword.line);
+            break;
+        }
     }
 }
 
@@ -523,6 +544,13 @@ void Compiler::compileExpr(const Expr* expr) {
             for (size_t endJump : endJumps) {
                 patchJump(endJump);
             }
+            break;
+        }
+
+        case ASTNodeType::AWAIT_EXPR: {
+            auto awaitExpr = static_cast<const AwaitExpr*>(expr);
+            compileExpr(awaitExpr->value.get());
+            emitOp(OpCode::OP_AWAIT, awaitExpr->keyword.line);
             break;
         }
     }

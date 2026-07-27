@@ -42,6 +42,11 @@ enum class TokenType {
     KEYWORD_IN,
     KEYWORD_CASE,
     KEYWORD_DEFAULT,
+    KEYWORD_ASYNC,
+    KEYWORD_AWAIT,
+    KEYWORD_TRY,
+    KEYWORD_CATCH,
+    KEYWORD_THROW,
 
     // Special
     TOKEN_EOF,
@@ -99,6 +104,11 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::KEYWORD_IN: return "in";
         case TokenType::KEYWORD_CASE: return "case";
         case TokenType::KEYWORD_DEFAULT: return "default";
+        case TokenType::KEYWORD_ASYNC: return "async";
+        case TokenType::KEYWORD_AWAIT: return "await";
+        case TokenType::KEYWORD_TRY: return "try";
+        case TokenType::KEYWORD_CATCH: return "catch";
+        case TokenType::KEYWORD_THROW: return "throw";
         case TokenType::TOKEN_EOF: return "EOF";
         default: return "UNKNOWN";
     }

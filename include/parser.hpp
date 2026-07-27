@@ -20,7 +20,7 @@ private:
     // Statement parsers
     StmtPtr declaration();
     StmtPtr varDeclaration(bool isConst = false);
-    StmtPtr functionDeclaration();
+    StmtPtr functionDeclaration(bool isAsync = false);
     StmtPtr structDeclaration();
     StmtPtr statement();
     StmtPtr blockStatement();
@@ -28,6 +28,8 @@ private:
     StmtPtr whileStatement();
     StmtPtr forStatement();
     StmtPtr returnStatement();
+    StmtPtr tryCatchStatement();
+    StmtPtr throwStatement();
     StmtPtr expressionStatement();
 
     // Expression parsers

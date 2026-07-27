@@ -1,0 +1,26 @@
+// SRL 64K-Point FFT Benchmark Script
+import("std/math.srl");
+
+fn generate_signal(size) {
+    var signal = arr_new();
+    var i = 0;
+    while i < size {
+        arr_push(signal, math_sin(i * 0.05) + math_cos(i * 0.01));
+        i = i + 1;
+    }
+    return signal;
+}
+
+fn run_fft_benchmark() {
+    var size = 65536; // 64K points
+    var signal = generate_signal(size);
+    
+    var start_t = clock();
+    var res = dsp_fft(signal);
+    var end_t = clock();
+    
+    var latency_ms = (end_t - start_t) * 1000.0;
+    print("Completed 64K-Point FFT Computation in: " + to_string(latency_ms) + " ms.");
+}
+
+run_fft_benchmark();
