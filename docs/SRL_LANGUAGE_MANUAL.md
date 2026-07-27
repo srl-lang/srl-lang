@@ -1,6 +1,6 @@
-# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.2.0 Technical Standard)
+# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.2.1 Technical Standard)
 
-**Version:** `v0.2.0`  
+**Version:** `v0.2.1`  
 **License:** GNU General Public License v3.0 (GPLv3)  
 **Execution Model:** C++ Bytecode Virtual Machine (Interpreter & Live Hot-Reloading) & Self-Hosted LLVM IR Compiler (`compiler/srlc.srl`)  
 **Design Scope:** High-performance Digital Signal Processing (DSP), Real-Time Fast Fourier Transform (FFT) Analysis, Native Desktop Qt GUI Applications, Live Zero-Downtime Hot-Reloading, and Standalone x86_64/ARM64 Executable Code Generation.
@@ -410,10 +410,10 @@ This section outlines technical guidelines for VM and compiler implementers:
 timeline
     title SRL Official Evolution Roadmap
     v0.1.0 : Core VM : LLVM Compiler : Base Toolchain
-    v0.2.0 : Self-Hosted Compiler : Qt GUI : Collections : Concurrency : Technical Manual
+    v0.2.1 : Self-Hosted Compiler : Qt GUI : Dot-Access : For Loops : Line Errors
     v0.3.0 : JIT Compiler (DynASM) : Generics : Interface/Trait : srl.lock & srl doc
     v1.0.0 : Production Stability : Package Registry Server : Full IDE Language Server (LSP)
 ```
 
 ---
-*This document serves as the normative specification for the SRL (Serial Run Language) v0.2.0.*
+*This document serves as the normative specification for the SRL (Serial Run Language) v0.2.1.*
