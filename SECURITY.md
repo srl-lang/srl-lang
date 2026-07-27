@@ -18,7 +18,7 @@ We take the security of **SRL** seriously. If you believe you have found a secur
 ### How to Report
 
 - **Do NOT** open a public GitHub issue for security vulnerabilities.
-- Send an email to **emirtopay952@gmail.com** with the details of the vulnerability.
+- Send an email to **help@srl-info.com** with the details of the vulnerability.
 
 ### What to Include
 
