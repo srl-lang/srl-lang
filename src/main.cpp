@@ -1,4 +1,5 @@
 #include "vm.hpp"
+#include "jit.hpp"
 #include "watcher.hpp"
 #include <iostream>
 #include <fstream>
@@ -26,7 +27,8 @@ static void printUsage() {
     std::cout << "  SRL Toolchain & Self-Hosted Compiler v0.1.0\n";
     std::cout << "========================================================\n";
     std::cout << "Usage:\n";
-    std::cout << "  srl run <file.srl>              Run SRL script in Bytecode VM\n";
+    std::cout << "  srl run <file.srl> [--jit]      Run SRL script in Bytecode VM or JIT mode\n";
+    std::cout << "  srl jit <file.srl>              Run SRL script using JIT Compiler Engine\n";
     std::cout << "  srl compile <file.srl> [-o bin] Self-Hosted Compilation using srlc.srl\n";
     std::cout << "  srl bootstrap                   Self-hosting compiler bootstrapping test\n";
     std::cout << "  srl build <file.srl> [-o bin]   Compile SRL script to Standalone Native Binary\n";
@@ -199,7 +201,20 @@ int main(int argc, char* argv[]) {
     }
 
     if (arg1 == "version" || arg1 == "-v" || arg1 == "--version") {
-        std::cout << "SRL Language Toolchain v0.1.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM)\n";
+        std::cout << "SRL Language Toolchain v0.1.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM + JIT Engine)\n";
+        return 0;
+    }
+
+    // --- SRL JIT ENGINE ---
+    if (arg1 == "jit" || (arg1 == "run" && argc >= 4 && std::string(argv[3]) == "--jit")) {
+        std::string targetFile = (arg1 == "jit") ? ((argc >= 3) ? argv[2] : "") : argv[2];
+        if (targetFile.empty()) {
+            std::cerr << "[SRL Error] Expected script file: srl run <file.srl> --jit\n";
+            return 1;
+        }
+        std::cout << "[SRL JIT] Executing script via JIT Engine...\n";
+        srl::JITEngine jitEngine;
+        jitEngine.compileAndRunFile(targetFile);
         return 0;
     }
 
