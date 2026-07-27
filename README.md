@@ -4,7 +4,7 @@
 
 Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hosted compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
-> **Current Version:** `v0.2.1`
+> **Current Version:** `v0.3.0`
 
 ---
 
@@ -114,6 +114,13 @@ print(v.y);  // 99.0
 ---
 
 ## Changelog
+
+### v0.3.0
+- **`foreach` / `in` loop** — `for (var item in list)` and `for (var key, val in map)` array and map iteration syntax
+- **String Interpolation** — `${expr}` syntax embedded in string literals (e.g. `"Pos: ${p.x}, ${p.y}"`)
+- **Pattern Matching** — `match (val) { case pattern => result, default => defaultResult }` expression syntax
+- **Self-Hosted Compiler Parity** — `compiler/*.srl` synchronized with all v0.3.0 language features
+- **VS Code IDE Extension Updates** — Syntax highlighting and snippets updated for `in`, `match`, `case`, `default` and string interpolation
 
 ### v0.2.1
 - **`for` loop** — C-style `for (init; cond; incr)` loop added to lexer, parser and compiler

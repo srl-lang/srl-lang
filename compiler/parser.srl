@@ -86,9 +86,9 @@ fn parse_primary(st) {
             map_set(call_node, "callee", name);
             var args = arr_new();
             if !parser_check_type(st, "RIGHT_PAREN") {
-                arr_push(args, parse_primary(st));
+                arr_push(args, parse_expression(st));
                 while parser_match_tok(st, "COMMA") {
-                    arr_push(args, parse_primary(st));
+                    arr_push(args, parse_expression(st));
                 }
             }
             parser_match_tok(st, "RIGHT_PAREN");
@@ -96,25 +96,96 @@ fn parse_primary(st) {
             return call_node;
         }
 
+        // Variable assignment check: name = expr
+        if parser_match_tok(st, "EQUAL") {
+            var assign_val = parse_expression(st);
+            var assign_node = parser_ast_node("ASSIGN");
+            map_set(assign_node, "name", name);
+            map_set(assign_node, "value", assign_val);
+            return assign_node;
+        }
+
+        // Dot access check: obj.field or obj.field = value
+        if parser_match_tok(st, "DOT") {
+            var field_tok = parser_advance_tok(st);
+            var field_name = map_get(field_tok, "lexeme");
+            var var_obj = parser_ast_node("VARIABLE");
+            map_set(var_obj, "name", name);
+
+            if parser_match_tok(st, "EQUAL") {
+                var val_expr = parse_expression(st);
+                var set_node = parser_ast_node("SET_FIELD");
+                map_set(set_node, "object", var_obj);
+                map_set(set_node, "field", field_name);
+                map_set(set_node, "value", val_expr);
+                return set_node;
+            } else {
+                var get_node = parser_ast_node("GET_FIELD");
+                map_set(get_node, "object", var_obj);
+                map_set(get_node, "field", field_name);
+                return get_node;
+            }
+        }
+
         var node = parser_ast_node("VARIABLE");
         map_set(node, "name", name);
         return node;
     }
-    if parser_match_tok(st, "LEFT_PAREN") {
-        var expr = parse_expression(st);
+    if parser_match_tok(st, "MATCH") {
+        parser_match_tok(st, "LEFT_PAREN");
+        var target_expr = parse_expression(st);
         parser_match_tok(st, "RIGHT_PAREN");
-        return expr;
+        parser_match_tok(st, "LEFT_BRACE");
+
+        var cases = arr_new();
+        while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+            if parser_match_tok(st, "CASE") {
+                var pat_expr = parse_expression(st);
+                if !parser_match_tok(st, "FAT_ARROW") {
+                    parser_match_tok(st, "ARROW");
+                }
+                var res_expr = parse_expression(st);
+                if !parser_match_tok(st, "COMMA") {
+                    parser_match_tok(st, "SEMICOLON");
+                }
+                var case_node = map_new();
+                map_set(case_node, "pattern", pat_expr);
+                map_set(case_node, "result", res_expr);
+                arr_push(cases, case_node);
+            } else if parser_match_tok(st, "DEFAULT") {
+                if !parser_match_tok(st, "FAT_ARROW") {
+                    parser_match_tok(st, "ARROW");
+                }
+                var res_expr = parse_expression(st);
+                if !parser_match_tok(st, "COMMA") {
+                    parser_match_tok(st, "SEMICOLON");
+                }
+                var case_node = map_new();
+                map_set(case_node, "pattern", nil);
+                map_set(case_node, "result", res_expr);
+                arr_push(cases, case_node);
+            } else {
+                parser_advance_tok(st);
+            }
+        }
+        parser_match_tok(st, "RIGHT_BRACE");
+
+        var node = parser_ast_node("MATCH_EXPR");
+        map_set(node, "target", target_expr);
+        map_set(node, "cases", cases);
+        return node;
     }
 
+    var tok_adv = parser_advance_tok(st);
     var node = parser_ast_node("LITERAL");
-    map_set(node, "value", "nil");
+    map_set(node, "value", map_get(tok_adv, "lexeme"));
     map_set(node, "val_type", "NIL");
     return node;
 }
 
 fn parse_expression(st) {
     var left = parse_primary(st);
-    if parser_match_tok(st, "PLUS") || parser_match_tok(st, "MINUS") || parser_match_tok(st, "STAR") || parser_match_tok(st, "SLASH") || parser_match_tok(st, "EQUAL_EQUAL") || parser_match_tok(st, "LESS") || parser_match_tok(st, "GREATER") {
+    if parser_match_tok(st, "PLUS") || parser_match_tok(st, "MINUS") || parser_match_tok(st, "STAR") || parser_match_tok(st, "SLASH") || parser_match_tok(st, "EQUAL_EQUAL") || parser_match_tok(st, "BANG_EQUAL") || parser_match_tok(st, "LESS") || parser_match_tok(st, "LESS_EQUAL") || parser_match_tok(st, "GREATER") || parser_match_tok(st, "GREATER_EQUAL") {
         var current = map_get(st, "current");
         var op_tok = arr_get(map_get(st, "tokens"), current - 1);
         var right = parse_primary(st);
@@ -176,12 +247,203 @@ fn parse_function_declaration(st) {
     return node;
 }
 
+fn parse_struct_declaration(st) {
+    var name_tok = parser_advance_tok(st);
+    var struct_name = map_get(name_tok, "lexeme");
+    parser_match_tok(st, "LEFT_BRACE");
+    var fields = arr_new();
+    if !parser_check_type(st, "RIGHT_BRACE") {
+        if parser_match_tok(st, "IDENTIFIER") {
+            var cur = map_get(st, "current");
+            arr_push(fields, map_get(arr_get(map_get(st, "tokens"), cur - 1), "lexeme"));
+        }
+        while parser_match_tok(st, "COMMA") {
+            if parser_match_tok(st, "IDENTIFIER") {
+                var cur = map_get(st, "current");
+                arr_push(fields, map_get(arr_get(map_get(st, "tokens"), cur - 1), "lexeme"));
+            }
+        }
+    }
+    parser_match_tok(st, "RIGHT_BRACE");
+
+    var node = parser_ast_node("STRUCT_DECL");
+    map_set(node, "name", struct_name);
+    map_set(node, "fields", fields);
+    return node;
+}
+
+fn parse_if_statement(st) {
+    parser_match_tok(st, "LEFT_PAREN");
+    var cond = parse_expression(st);
+    parser_match_tok(st, "RIGHT_PAREN");
+    parser_match_tok(st, "LEFT_BRACE");
+    var then_stmts = arr_new();
+    while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+        arr_push(then_stmts, parse_statement(st));
+    }
+    parser_match_tok(st, "RIGHT_BRACE");
+    var else_stmts = nil;
+    if parser_match_tok(st, "ELSE") {
+        parser_match_tok(st, "LEFT_BRACE");
+        else_stmts = arr_new();
+        while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+            arr_push(else_stmts, parse_statement(st));
+        }
+        parser_match_tok(st, "RIGHT_BRACE");
+    }
+    var node = parser_ast_node("IF_STMT");
+    map_set(node, "condition", cond);
+    map_set(node, "then_branch", then_stmts);
+    map_set(node, "else_branch", else_stmts);
+    return node;
+}
+
+fn parse_while_statement(st) {
+    var cond = parse_expression(st);
+    parser_match_tok(st, "LEFT_BRACE");
+    var body = arr_new();
+    while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+        arr_push(body, parse_statement(st));
+    }
+    parser_match_tok(st, "RIGHT_BRACE");
+    var node = parser_ast_node("WHILE_STMT");
+    map_set(node, "condition", cond);
+    map_set(node, "body", body);
+    return node;
+}
+
+fn parse_for_statement(st) {
+    parser_match_tok(st, "LEFT_PAREN");
+    if parser_match_tok(st, "VAR") {
+        var first_tok = parser_advance_tok(st);
+        var first_var = map_get(first_tok, "lexeme");
+        if parser_match_tok(st, "COMMA") {
+            var second_tok = parser_advance_tok(st);
+            var second_var = map_get(second_tok, "lexeme");
+            parser_match_tok(st, "IN");
+            var coll_expr = parse_expression(st);
+            parser_match_tok(st, "RIGHT_PAREN");
+            parser_match_tok(st, "LEFT_BRACE");
+            var body_stmts = arr_new();
+            while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+                arr_push(body_stmts, parse_statement(st));
+            }
+            parser_match_tok(st, "RIGHT_BRACE");
+
+            var node = parser_ast_node("FOR_IN_STMT");
+            map_set(node, "key_var", first_var);
+            map_set(node, "val_var", second_var);
+            map_set(node, "collection", coll_expr);
+            map_set(node, "body", body_stmts);
+            return node;
+        } else if parser_match_tok(st, "IN") {
+            var coll_expr = parse_expression(st);
+            parser_match_tok(st, "RIGHT_PAREN");
+            parser_match_tok(st, "LEFT_BRACE");
+            var body_stmts = arr_new();
+            while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+                arr_push(body_stmts, parse_statement(st));
+            }
+            parser_match_tok(st, "RIGHT_BRACE");
+
+            var node = parser_ast_node("FOR_IN_STMT");
+            map_set(node, "val_var", first_var);
+            map_set(node, "collection", coll_expr);
+            map_set(node, "body", body_stmts);
+            return node;
+        } else {
+            var init_expr = nil;
+            if parser_match_tok(st, "EQUAL") {
+                init_expr = parse_expression(st);
+            }
+            parser_match_tok(st, "SEMICOLON");
+            var init_stmt = parser_ast_node("VAR_DECL");
+            map_set(init_stmt, "name", first_var);
+            map_set(init_stmt, "initializer", init_expr);
+
+            var cond_expr = nil;
+            if !parser_check_type(st, "SEMICOLON") {
+                cond_expr = parse_expression(st);
+            }
+            parser_match_tok(st, "SEMICOLON");
+
+            var incr_expr = nil;
+            if !parser_check_type(st, "RIGHT_PAREN") {
+                incr_expr = parse_expression(st);
+            }
+            parser_match_tok(st, "RIGHT_PAREN");
+
+            parser_match_tok(st, "LEFT_BRACE");
+            var body = arr_new();
+            while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+                arr_push(body, parse_statement(st));
+            }
+            parser_match_tok(st, "RIGHT_BRACE");
+
+            var node = parser_ast_node("FOR_STMT");
+            map_set(node, "initializer", init_stmt);
+            map_set(node, "condition", cond_expr);
+            map_set(node, "increment", incr_expr);
+            map_set(node, "body", body);
+            return node;
+        }
+    }
+
+    var init_stmt = nil;
+    if !parser_check_type(st, "SEMICOLON") {
+        var expr = parse_expression(st);
+        parser_match_tok(st, "SEMICOLON");
+        init_stmt = parser_ast_node("EXPR_STMT");
+        map_set(init_stmt, "expr", expr);
+    } else {
+        parser_match_tok(st, "SEMICOLON");
+    }
+
+    var cond_expr = nil;
+    if !parser_check_type(st, "SEMICOLON") {
+        cond_expr = parse_expression(st);
+    }
+    parser_match_tok(st, "SEMICOLON");
+
+    var incr_expr = nil;
+    if !parser_check_type(st, "RIGHT_PAREN") {
+        incr_expr = parse_expression(st);
+    }
+    parser_match_tok(st, "RIGHT_PAREN");
+
+    parser_match_tok(st, "LEFT_BRACE");
+    var body = arr_new();
+    while !parser_check_type(st, "RIGHT_BRACE") && !parser_check_type(st, "EOF") {
+        arr_push(body, parse_statement(st));
+    }
+    parser_match_tok(st, "RIGHT_BRACE");
+
+    var node = parser_ast_node("FOR_STMT");
+    map_set(node, "initializer", init_stmt);
+    map_set(node, "condition", cond_expr);
+    map_set(node, "increment", incr_expr);
+    map_set(node, "body", body);
+    return node;
+}
+
 fn parse_statement(st) {
     if parser_match_tok(st, "VAR") {
         return parse_var_declaration(st);
     }
     if parser_match_tok(st, "FN") {
         return parse_function_declaration(st);
+    }
+    if parser_match_tok(st, "STRUCT") {
+        return parse_struct_declaration(st);
+    }
+    if parser_match_tok(st, "IF") {
+        return parse_if_statement(st);
+    }
+    if parser_match_tok(st, "WHILE") {
+        return parse_while_statement(st);
+    }
+    if parser_match_tok(st, "FOR") {
+        return parse_for_statement(st);
     }
     if parser_match_tok(st, "RETURN") {
         var ret_expr = parse_expression(st);

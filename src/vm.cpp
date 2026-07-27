@@ -462,6 +462,26 @@ void VM::registerNativeFunctions() {
         return Value(false);
     });
 
+    defineNative("map_keys", [](int argCount, const Value* args) -> Value {
+        auto keys = std::make_shared<std::vector<Value>>();
+        if (argCount >= 1 && args[0].isMap()) {
+            for (const auto& pair : *args[0].asMap()) {
+                if (pair.first != "__metatable") {
+                    keys->push_back(Value(pair.first));
+                }
+            }
+        }
+        return Value(keys);
+    });
+
+    defineNative("is_map", [](int argCount, const Value* args) -> Value {
+        return Value(argCount >= 1 && args[0].isMap());
+    });
+
+    defineNative("is_array", [](int argCount, const Value* args) -> Value {
+        return Value(argCount >= 1 && args[0].isArray());
+    });
+
     // --- Metatable Operations ---
     defineNative("setmetatable", [](int argCount, const Value* args) -> Value {
         if (argCount >= 2 && args[0].isMap() && args[1].isMap()) {
@@ -906,7 +926,6 @@ InterpretResult VM::run(size_t targetFrameDepth) {
     #define READ_BYTE() (CURR_FRAME.chunk->code[CURR_FRAME.ip++])
     #define READ_CONSTANT() (CURR_FRAME.chunk->constants[READ_BYTE()])
     #define READ_SHORT() (CURR_FRAME.ip += 2, (uint16_t)((CURR_FRAME.chunk->code[CURR_FRAME.ip - 2] << 8) | CURR_FRAME.chunk->code[CURR_FRAME.ip - 1]))
-    // Get current line number for error reporting
     #define CURRENT_LINE() (CURR_FRAME.ip > 0 && (CURR_FRAME.ip - 1) < CURR_FRAME.chunk->lines.size() \
                             ? CURR_FRAME.chunk->lines[CURR_FRAME.ip - 1] : 0)
 
@@ -920,8 +939,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
         OpCode instruction = static_cast<OpCode>(READ_BYTE());
         switch (instruction) {
             case OpCode::OP_CONSTANT: {
-                Value constant = READ_CONSTANT();
-                push(constant);
+                push(READ_CONSTANT());
                 break;
             }
             case OpCode::OP_NIL: push(Value()); break;

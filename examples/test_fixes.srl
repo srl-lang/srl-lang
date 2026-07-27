@@ -1,14 +1,56 @@
-// Test: for loop, dot-access and error messages
+// Test: for loop, dot-access, foreach/in loops, string interpolation, pattern matching, and float modulo
 print("=== FOR LOOP TEST ===");
 for (var i = 0; i < 5; i = i + 1) {
     print("i = " + to_string(i));
 }
+
+print("=== FOREACH IN ARRAY TEST ===");
+var items = arr_new();
+arr_push(items, "apple");
+arr_push(items, "banana");
+arr_push(items, "cherry");
+
+for (var item in items) {
+    print("item: " + item);
+}
+
+print("=== FOREACH IN MAP TEST ===");
+var m = map_new();
+map_set(m, "name", "SRL");
+map_set(m, "ver", "0.2.1");
+
+for (var k, v in m) {
+    print("k = " + k + ", v = " + v);
+}
+
+print("=== STRING INTERPOLATION TEST ===");
+var name = "World";
+var count = 42;
+print("Hello ${name}, count = ${count}!");
+
+print("=== PATTERN MATCHING TEST ===");
+var status = 200;
+var status_msg = match (status) {
+    case 200 => "OK",
+    case 404 => "Not Found",
+    default => "Unknown Status"
+};
+print("Status 200: ${status_msg}");
+
+var unknown_status = 500;
+var err_msg = match (unknown_status) {
+    case 200 => "OK",
+    case 404 => "Not Found",
+    default => "Unknown Status"
+};
+print("Status 500: ${err_msg}");
 
 print("=== DOT ACCESS READ TEST ===");
 struct Point { x, y }
 var p = Point(10, 20);
 print("p.x = " + to_string(p.x));
 print("p.y = " + to_string(p.y));
+print("Point coordinates: ${p.x}, ${p.y}");
 
 print("=== DOT ACCESS WRITE TEST ===");
 p.x = 999;

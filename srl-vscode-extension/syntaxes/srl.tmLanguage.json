@@ -28,11 +28,11 @@
       "patterns": [
         {
           "name": "keyword.control.srl",
-          "match": "\\b(if|else|while|for|return|import)\\b"
+          "match": "\\b(if|else|while|for|in|match|case|default|return|import)\\b"
         },
         {
           "name": "storage.type.srl",
-          "match": "\\b(fn|var|struct)\\b"
+          "match": "\\b(fn|var|struct|const|enum)\\b"
         },
         {
           "name": "constant.language.srl",
@@ -50,6 +50,16 @@
             {
               "name": "constant.character.escape.srl",
               "match": "\\\\."
+            },
+            {
+              "name": "punctuation.definition.template-expression.srl",
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "patterns": [
+                { "include": "#keywords" },
+                { "include": "#functions" },
+                { "include": "#operators" }
+              ]
             }
           ]
         }
@@ -75,7 +85,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.srl",
-          "match": "\\b(print|to_string|to_number|arr_new|arr_len|arr_push|arr_pop|arr_get|arr_set|map_new|map_get|map_set|str_len|str_sub|str_upper|str_lower|setmetatable|getmetatable|c_open|c_call|c_malloc|c_free|dsp_sine|dsp_fft|dsp_ifft|dsp_plot|qt_window|qt_exec|sys_exec|sys_read_file|sys_write_file)\\b"
+          "match": "\\b(print|to_string|to_number|arr_new|arr_len|arr_push|arr_pop|arr_get|arr_set|map_new|map_get|map_set|map_keys|is_map|is_array|str_len|str_sub|str_upper|str_lower|setmetatable|getmetatable|c_open|c_call|c_malloc|c_free|dsp_sine|dsp_fft|dsp_ifft|dsp_plot|qt_window|qt_exec|sys_exec|sys_read_file|sys_write_file)\\b"
         }
       ]
     },
@@ -83,7 +93,7 @@
       "patterns": [
         {
           "name": "keyword.operator.srl",
-          "match": "(\\+|\\-|\\*|/|%|=|==|!=|<|>|<=|>=|&&|\\|\\||\\.)"
+          "match": "(\\+|\\-|\\*|/|%|=|==|!=|<|>|<=|>=|=>|->|&&|\\|\\||\\.)"
         }
       ]
     }

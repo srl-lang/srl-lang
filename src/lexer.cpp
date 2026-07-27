@@ -12,6 +12,9 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
     {"for", TokenType::KEYWORD_FOR},
+    {"in", TokenType::KEYWORD_IN},
+    {"case", TokenType::KEYWORD_CASE},
+    {"default", TokenType::KEYWORD_DEFAULT},
     {"return", TokenType::KEYWORD_RETURN},
     {"true", TokenType::KEYWORD_TRUE},
     {"false", TokenType::KEYWORD_FALSE},
@@ -170,7 +173,31 @@ void Lexer::scanToken() {
 
 void Lexer::string() {
     std::string value;
+
     while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '$' && peekNext() == '{') {
+            addToken(TokenType::STRING, value);
+            addToken(TokenType::PLUS);
+            addToken(TokenType::IDENTIFIER, "to_string");
+            addToken(TokenType::LEFT_PAREN);
+
+            advance(); // consume '$'
+            advance(); // consume '{'
+
+            while (peek() != '}' && !isAtEnd()) {
+                start_ = current_;
+                scanToken();
+            }
+
+            if (peek() == '}') {
+                advance(); // consume '}'
+            }
+            addToken(TokenType::RIGHT_PAREN);
+            addToken(TokenType::PLUS);
+            value = "";
+            continue;
+        }
+
         if (peek() == '\n') {
             line_++;
             column_ = 1;

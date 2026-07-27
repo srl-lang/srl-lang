@@ -140,27 +140,138 @@ StmtPtr Parser::whileStatement() {
 
 StmtPtr Parser::forStatement() {
     // for ( [init] ; [cond] ; [incr] ) body
+    // OR for (var item in iterable) body
+    // OR for (var key, val in map) body
     consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
 
-    // Initializer
+    if (match({TokenType::KEYWORD_VAR})) {
+        Token firstVar = consume(TokenType::IDENTIFIER, "Expect variable name after 'var'.");
+        if (match({TokenType::COMMA})) {
+            Token secondVar = consume(TokenType::IDENTIFIER, "Expect second variable name after ','.");
+            consume(TokenType::KEYWORD_IN, "Expect 'in' after variable names in for-in loop.");
+            ExprPtr collection = expression();
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after for-in expression.");
+            StmtPtr body = statement();
+
+            static size_t loopId = 0;
+            std::string idStr = std::to_string(++loopId);
+            Token collTok(TokenType::IDENTIFIER, "_coll_" + idStr, previous().line, previous().column);
+            Token keysTok(TokenType::IDENTIFIER, "_keys_" + idStr, previous().line, previous().column);
+            Token iTok(TokenType::IDENTIFIER, "_i_" + idStr, previous().line, previous().column);
+            Token lenTok(TokenType::IDENTIFIER, "_len_" + idStr, previous().line, previous().column);
+            Token parenTok(TokenType::LEFT_PAREN, "(", previous().line, previous().column);
+
+            std::vector<StmtPtr> desugaredStmts;
+            desugaredStmts.push_back(std::make_unique<VarStmt>(collTok, std::move(collection)));
+
+            std::vector<ExprPtr> mkArgs;
+            mkArgs.push_back(std::make_unique<VariableExpr>(collTok));
+            ExprPtr mapKeysCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "map_keys", 0, 0)), parenTok, std::move(mkArgs));
+            desugaredStmts.push_back(std::make_unique<VarStmt>(keysTok, std::move(mapKeysCall)));
+
+            std::vector<ExprPtr> alArgs;
+            alArgs.push_back(std::make_unique<VariableExpr>(keysTok));
+            ExprPtr arrLenCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "arr_len", 0, 0)), parenTok, std::move(alArgs));
+            desugaredStmts.push_back(std::make_unique<VarStmt>(lenTok, std::move(arrLenCall)));
+
+            StmtPtr loopInit = std::make_unique<VarStmt>(iTok, std::make_unique<LiteralExpr>(Value(0.0)));
+            ExprPtr loopCond = std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(iTok), Token(TokenType::LESS, "<", 0, 0), std::make_unique<VariableExpr>(lenTok));
+            ExprPtr loopIncr = std::make_unique<AssignExpr>(iTok, std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(iTok), Token(TokenType::PLUS, "+", 0, 0), std::make_unique<LiteralExpr>(Value(1.0))));
+
+            std::vector<StmtPtr> innerBody;
+            std::vector<ExprPtr> agArgs;
+            agArgs.push_back(std::make_unique<VariableExpr>(keysTok));
+            agArgs.push_back(std::make_unique<VariableExpr>(iTok));
+            ExprPtr arrGetCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "arr_get", 0, 0)), parenTok, std::move(agArgs));
+            innerBody.push_back(std::make_unique<VarStmt>(firstVar, std::move(arrGetCall)));
+
+            std::vector<ExprPtr> mgArgs;
+            mgArgs.push_back(std::make_unique<VariableExpr>(collTok));
+            mgArgs.push_back(std::make_unique<VariableExpr>(firstVar));
+            ExprPtr mapGetCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "map_get", 0, 0)), parenTok, std::move(mgArgs));
+            innerBody.push_back(std::make_unique<VarStmt>(secondVar, std::move(mapGetCall)));
+
+            innerBody.push_back(std::move(body));
+
+            StmtPtr innerBlock = std::make_unique<BlockStmt>(std::move(innerBody));
+            desugaredStmts.push_back(std::make_unique<ForStmt>(std::move(loopInit), std::move(loopCond), std::move(loopIncr), std::move(innerBlock)));
+
+            return std::make_unique<BlockStmt>(std::move(desugaredStmts));
+        } else if (match({TokenType::KEYWORD_IN})) {
+            ExprPtr collection = expression();
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after for-in expression.");
+            StmtPtr body = statement();
+
+            static size_t loopId = 0;
+            std::string idStr = std::to_string(++loopId);
+            Token collTok(TokenType::IDENTIFIER, "_coll_" + idStr, previous().line, previous().column);
+            Token iTok(TokenType::IDENTIFIER, "_i_" + idStr, previous().line, previous().column);
+            Token lenTok(TokenType::IDENTIFIER, "_len_" + idStr, previous().line, previous().column);
+            Token parenTok(TokenType::LEFT_PAREN, "(", previous().line, previous().column);
+
+            std::vector<StmtPtr> desugaredStmts;
+            desugaredStmts.push_back(std::make_unique<VarStmt>(collTok, std::move(collection)));
+
+            std::vector<ExprPtr> alArgs;
+            alArgs.push_back(std::make_unique<VariableExpr>(collTok));
+            ExprPtr arrLenCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "arr_len", 0, 0)), parenTok, std::move(alArgs));
+            desugaredStmts.push_back(std::make_unique<VarStmt>(lenTok, std::move(arrLenCall)));
+
+            StmtPtr loopInit = std::make_unique<VarStmt>(iTok, std::make_unique<LiteralExpr>(Value(0.0)));
+            ExprPtr loopCond = std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(iTok), Token(TokenType::LESS, "<", 0, 0), std::make_unique<VariableExpr>(lenTok));
+            ExprPtr loopIncr = std::make_unique<AssignExpr>(iTok, std::make_unique<BinaryExpr>(std::make_unique<VariableExpr>(iTok), Token(TokenType::PLUS, "+", 0, 0), std::make_unique<LiteralExpr>(Value(1.0))));
+
+            std::vector<StmtPtr> innerBody;
+            std::vector<ExprPtr> agArgs;
+            agArgs.push_back(std::make_unique<VariableExpr>(collTok));
+            agArgs.push_back(std::make_unique<VariableExpr>(iTok));
+            ExprPtr arrGetCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, "arr_get", 0, 0)), parenTok, std::move(agArgs));
+            innerBody.push_back(std::make_unique<VarStmt>(firstVar, std::move(arrGetCall)));
+
+            innerBody.push_back(std::move(body));
+
+            StmtPtr innerBlock = std::make_unique<BlockStmt>(std::move(innerBody));
+            desugaredStmts.push_back(std::make_unique<ForStmt>(std::move(loopInit), std::move(loopCond), std::move(loopIncr), std::move(innerBlock)));
+
+            return std::make_unique<BlockStmt>(std::move(desugaredStmts));
+        } else {
+            ExprPtr initializer = nullptr;
+            if (match({TokenType::EQUAL})) {
+                initializer = expression();
+            }
+            match({TokenType::SEMICOLON});
+            StmtPtr initStmt = std::make_unique<VarStmt>(std::move(firstVar), std::move(initializer));
+
+            ExprPtr condition = nullptr;
+            if (!check(TokenType::SEMICOLON)) {
+                condition = expression();
+            }
+            consume(TokenType::SEMICOLON, "Expect ';' after for condition.");
+
+            ExprPtr increment = nullptr;
+            if (!check(TokenType::RIGHT_PAREN)) {
+                increment = expression();
+            }
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after for increment.");
+
+            StmtPtr body = statement();
+            return std::make_unique<ForStmt>(std::move(initStmt), std::move(condition), std::move(increment), std::move(body));
+        }
+    }
+
     StmtPtr initializer = nullptr;
     if (match({TokenType::SEMICOLON})) {
         // no initializer
-    } else if (match({TokenType::KEYWORD_VAR})) {
-        initializer = varDeclaration();
-        match({TokenType::SEMICOLON}); // consume optional ;
     } else {
         initializer = expressionStatement();
     }
 
-    // Condition
     ExprPtr condition = nullptr;
     if (!check(TokenType::SEMICOLON)) {
         condition = expression();
     }
     consume(TokenType::SEMICOLON, "Expect ';' after for condition.");
 
-    // Increment
     ExprPtr increment = nullptr;
     if (!check(TokenType::RIGHT_PAREN)) {
         increment = expression();
@@ -316,6 +427,39 @@ ExprPtr Parser::finishCall(ExprPtr callee) {
     return std::make_unique<CallExpr>(std::move(callee), std::move(paren), std::move(arguments));
 }
 
+ExprPtr Parser::matchExpression() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'match'.");
+    ExprPtr target = expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after match target expression.");
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before match cases.");
+
+    std::vector<MatchCase> cases;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match({TokenType::KEYWORD_CASE})) {
+            ExprPtr pattern = expression();
+            if (!match({TokenType::FAT_ARROW}) && !match({TokenType::ARROW})) {
+                consume(TokenType::FAT_ARROW, "Expect '=>' after match case pattern.");
+            }
+            ExprPtr result = expression();
+            match({TokenType::COMMA, TokenType::SEMICOLON});
+            cases.emplace_back(std::move(pattern), std::move(result));
+        } else if (match({TokenType::KEYWORD_DEFAULT})) {
+            if (!match({TokenType::FAT_ARROW}) && !match({TokenType::ARROW})) {
+                consume(TokenType::FAT_ARROW, "Expect '=>' after 'default'.");
+            }
+            ExprPtr result = expression();
+            match({TokenType::COMMA, TokenType::SEMICOLON});
+            cases.emplace_back(nullptr, std::move(result));
+        } else {
+            throw std::runtime_error("Expect 'case' or 'default' inside match expression.");
+        }
+    }
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after match cases.");
+    return std::make_unique<MatchExpr>(std::move(target), std::move(cases));
+}
+
 ExprPtr Parser::primary() {
     if (match({TokenType::KEYWORD_FALSE})) return std::make_unique<LiteralExpr>(Value(false));
     if (match({TokenType::KEYWORD_TRUE})) return std::make_unique<LiteralExpr>(Value(true));
@@ -342,31 +486,6 @@ ExprPtr Parser::primary() {
     }
 
     throw std::runtime_error("Expect expression at token: " + previous().lexeme);
-}
-
-ExprPtr Parser::matchExpression() {
-    bool hasParen = match({TokenType::LEFT_PAREN});
-    ExprPtr target = expression();
-    if (hasParen) {
-        consume(TokenType::RIGHT_PAREN, "Expect ')' after match target.");
-    }
-    consume(TokenType::LEFT_BRACE, "Expect '{' before match cases.");
-
-    std::vector<MatchCase> cases;
-    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
-        ExprPtr pattern = nullptr;
-        if (check(TokenType::IDENTIFIER) && peek().lexeme == "_") {
-            advance(); // consume wildcard '_'
-        } else {
-            pattern = expression();
-        }
-        consume(TokenType::FAT_ARROW, "Expect '=>' after match pattern.");
-        ExprPtr result = expression();
-        cases.emplace_back(std::move(pattern), std::move(result));
-        if (check(TokenType::COMMA)) advance();
-    }
-    consume(TokenType::RIGHT_BRACE, "Expect '}' after match cases.");
-    return std::make_unique<MatchExpr>(std::move(target), std::move(cases));
 }
 
 // Helpers

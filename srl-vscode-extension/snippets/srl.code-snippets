@@ -24,6 +24,34 @@
     ],
     "description": "C-style for loop"
   },
+  "Foreach Array Loop": {
+    "prefix": "forin",
+    "body": [
+      "for (var ${1:item} in ${2:list}) {",
+      "\t${0:// loop body}",
+      "}"
+    ],
+    "description": "Foreach element loop over array or collection"
+  },
+  "Foreach Map Loop": {
+    "prefix": "formap",
+    "body": [
+      "for (var ${1:key}, ${2:val} in ${3:map}) {",
+      "\t${0:// loop body}",
+      "}"
+    ],
+    "description": "Foreach key-value loop over map"
+  },
+  "Match Expression": {
+    "prefix": "match",
+    "body": [
+      "var ${1:result} = match (${2:target}) {",
+      "\tcase ${3:pattern} => ${4:val},",
+      "\tdefault => ${5:defaultVal}",
+      "};"
+    ],
+    "description": "Match expression pattern matching"
+  },
   "If Statement": {
     "prefix": "if",
     "body": [

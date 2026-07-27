@@ -8,7 +8,13 @@ print("========================================================");
 
 var x = 10;
 var y = 20;
-var sum = x + y;
 
-print("Computed Sum: " + to_string(sum));
+struct Point { x, y }
+var p = Point(15, 25);
+print(p.x);
+
+for (var i = 0; i < 3; i = i + 1) {
+    print(i);
+}
+
 print("Compiled cleanly by SRL Self-Hosted Compiler (srlc.srl)!");

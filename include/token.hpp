@@ -39,6 +39,9 @@ enum class TokenType {
     KEYWORD_NIL,
     KEYWORD_STRUCT,
     KEYWORD_FOR,
+    KEYWORD_IN,
+    KEYWORD_CASE,
+    KEYWORD_DEFAULT,
 
     // Special
     TOKEN_EOF,
@@ -93,6 +96,9 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::KEYWORD_NIL: return "nil";
         case TokenType::KEYWORD_STRUCT: return "struct";
         case TokenType::KEYWORD_FOR: return "for";
+        case TokenType::KEYWORD_IN: return "in";
+        case TokenType::KEYWORD_CASE: return "case";
+        case TokenType::KEYWORD_DEFAULT: return "default";
         case TokenType::TOKEN_EOF: return "EOF";
         default: return "UNKNOWN";
     }
