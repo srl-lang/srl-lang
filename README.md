@@ -8,6 +8,16 @@ Featuring a hybrid C/Lua syntax, a fast bytecode virtual machine, and a self-hos
 
 ---
 
+## Quick Installation
+
+Automated installer scripts are available for all major platforms:
+
+- **Windows (Batch / PowerShell):** Run [install.bat](install.bat) or `powershell .\install.ps1`
+- **Linux & macOS (Bash):** Run `chmod +x install.sh && ./install.sh`
+- **Detailed Installation Guide:** See [docs/INSTALLATION.md](docs/INSTALLATION.md) for PATH configurations and Inno Setup GUI installer generation.
+
+---
+
 ## Documentation & Specifications
 
 All technical specifications, manuals, and developer guidelines are organized in the [`docs/`](docs/) directory:
