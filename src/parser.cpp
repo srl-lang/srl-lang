@@ -36,7 +36,8 @@ std::vector<StmtPtr> Parser::parse() {
 
 StmtPtr Parser::declaration() {
     if (match({TokenType::KEYWORD_FN})) return functionDeclaration();
-    if (match({TokenType::KEYWORD_VAR})) return varDeclaration();
+    if (match({TokenType::KEYWORD_VAR})) return varDeclaration(false);
+    if (match({TokenType::KEYWORD_CONST})) return varDeclaration(true);
     if (match({TokenType::KEYWORD_STRUCT})) return structDeclaration();
     return statement();
 }
@@ -84,7 +85,7 @@ StmtPtr Parser::functionDeclaration() {
     return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(body));
 }
 
-StmtPtr Parser::varDeclaration() {
+StmtPtr Parser::varDeclaration(bool isConst) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     
     // Optional type annotation (e.g. : int)
@@ -100,7 +101,7 @@ StmtPtr Parser::varDeclaration() {
     }
 
     match({TokenType::SEMICOLON}); // optional trailing semicolon
-    return std::make_unique<VarStmt>(std::move(name), std::move(initializer));
+    return std::make_unique<VarStmt>(std::move(name), std::move(initializer), isConst);
 }
 
 StmtPtr Parser::statement() {
@@ -319,6 +320,7 @@ ExprPtr Parser::primary() {
     if (match({TokenType::KEYWORD_FALSE})) return std::make_unique<LiteralExpr>(Value(false));
     if (match({TokenType::KEYWORD_TRUE})) return std::make_unique<LiteralExpr>(Value(true));
     if (match({TokenType::KEYWORD_NIL})) return std::make_unique<LiteralExpr>(Value());
+    if (match({TokenType::KEYWORD_MATCH})) return matchExpression();
 
     if (match({TokenType::NUMBER})) {
         double val = std::stod(previous().lexeme);
@@ -340,6 +342,31 @@ ExprPtr Parser::primary() {
     }
 
     throw std::runtime_error("Expect expression at token: " + previous().lexeme);
+}
+
+ExprPtr Parser::matchExpression() {
+    bool hasParen = match({TokenType::LEFT_PAREN});
+    ExprPtr target = expression();
+    if (hasParen) {
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after match target.");
+    }
+    consume(TokenType::LEFT_BRACE, "Expect '{' before match cases.");
+
+    std::vector<MatchCase> cases;
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        ExprPtr pattern = nullptr;
+        if (check(TokenType::IDENTIFIER) && peek().lexeme == "_") {
+            advance(); // consume wildcard '_'
+        } else {
+            pattern = expression();
+        }
+        consume(TokenType::FAT_ARROW, "Expect '=>' after match pattern.");
+        ExprPtr result = expression();
+        cases.emplace_back(std::move(pattern), std::move(result));
+        if (check(TokenType::COMMA)) advance();
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after match cases.");
+    return std::make_unique<MatchExpr>(std::move(target), std::move(cases));
 }
 
 // Helpers

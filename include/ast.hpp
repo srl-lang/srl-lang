@@ -24,6 +24,7 @@ enum class ASTNodeType {
     CALL_EXPR,
     GET_FIELD_EXPR,
     SET_FIELD_EXPR,
+    MATCH_EXPR,
 
     // Statements
     EXPRESSION_STMT,
@@ -108,6 +109,20 @@ struct SetFieldExpr : public Expr {
     ASTNodeType getType() const override { return ASTNodeType::SET_FIELD_EXPR; }
 };
 
+struct MatchCase {
+    ExprPtr pattern; // nullptr if wildcard '_'
+    ExprPtr result;
+    MatchCase(ExprPtr pat, ExprPtr res) : pattern(std::move(pat)), result(std::move(res)) {}
+};
+
+struct MatchExpr : public Expr {
+    ExprPtr target;
+    std::vector<MatchCase> cases;
+    MatchExpr(ExprPtr target, std::vector<MatchCase> cases)
+        : target(std::move(target)), cases(std::move(cases)) {}
+    ASTNodeType getType() const override { return ASTNodeType::MATCH_EXPR; }
+};
+
 // Statements
 struct ExpressionStmt : public Stmt {
     ExprPtr expression;
@@ -118,7 +133,9 @@ struct ExpressionStmt : public Stmt {
 struct VarStmt : public Stmt {
     Token name;
     ExprPtr initializer;
-    VarStmt(Token name, ExprPtr init) : name(std::move(name)), initializer(std::move(init)) {}
+    bool isConst;
+    VarStmt(Token name, ExprPtr init, bool isConst = false)
+        : name(std::move(name)), initializer(std::move(init)), isConst(isConst) {}
     ASTNodeType getType() const override { return ASTNodeType::VAR_STMT; }
 };
 

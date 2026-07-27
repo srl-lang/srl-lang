@@ -6,6 +6,8 @@ namespace srl {
 const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"fn", TokenType::KEYWORD_FN},
     {"var", TokenType::KEYWORD_VAR},
+    {"const", TokenType::KEYWORD_CONST},
+    {"match", TokenType::KEYWORD_MATCH},
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
@@ -93,7 +95,13 @@ void Lexer::scanToken() {
             addToken(match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
             break;
         case '=':
-            addToken(match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
+            if (match('=')) {
+                addToken(TokenType::EQUAL_EQUAL);
+            } else if (match('>')) {
+                addToken(TokenType::FAT_ARROW);
+            } else {
+                addToken(TokenType::EQUAL);
+            }
             break;
         case '<':
             addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);

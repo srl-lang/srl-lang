@@ -905,7 +905,14 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_DEFINE_GLOBAL: {
                 Value nameVal = READ_CONSTANT();
                 Value value = pop();
-                env_.defineGlobal(nameVal.asString(), value);
+                env_.defineGlobal(nameVal.asString(), value, false);
+                break;
+            }
+
+            case OpCode::OP_DEFINE_CONST: {
+                Value nameVal = READ_CONSTANT();
+                Value value = pop();
+                env_.defineGlobal(nameVal.asString(), value, true);
                 break;
             }
 
@@ -923,7 +930,10 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_SET_GLOBAL: {
                 Value nameVal = READ_CONSTANT();
                 Value val = peek(0);
-                env_.setGlobal(nameVal.asString(), val);
+                if (!env_.setGlobal(nameVal.asString(), val)) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Cannot reassign constant variable '" << nameVal.asString() << "'." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
                 break;
             }
 
@@ -936,6 +946,11 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
                 stack_[CURR_FRAME.stackOffset + slot] = peek(0);
+                break;
+            }
+
+            case OpCode::OP_DUP: {
+                push(peek(0));
                 break;
             }
 

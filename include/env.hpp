@@ -3,21 +3,32 @@
 
 #include "value.hpp"
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 namespace srl {
 
 class Environment {
 public:
-    void defineGlobal(const std::string& name, const Value& value) {
-        // PRESERVE STATE: If global variable already exists during hot reload, KEEP IT!
-        if (globals_.find(name) == globals_.end()) {
+    void defineGlobal(const std::string& name, const Value& value, bool isConst = false) {
+        if (globals_.find(name) == globals_.end() || isConst) {
             globals_[name] = value;
+        }
+        if (isConst) {
+            constants_.insert(name);
         }
     }
 
-    void setGlobal(const std::string& name, const Value& value) {
+    bool setGlobal(const std::string& name, const Value& value) {
+        if (constants_.find(name) != constants_.end()) {
+            return false; // Cannot reassign constant variable
+        }
         globals_[name] = value;
+        return true;
+    }
+
+    bool isConst(const std::string& name) const {
+        return constants_.find(name) != constants_.end();
     }
 
     bool getGlobal(const std::string& name, Value& value) const {
@@ -35,6 +46,7 @@ public:
 
 private:
     std::unordered_map<std::string, Value> globals_;
+    std::unordered_set<std::string> constants_;
 };
 
 } // namespace srl

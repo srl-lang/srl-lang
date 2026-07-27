@@ -140,7 +140,7 @@ void Compiler::compileStmt(const Stmt* stmt) {
 
             if (currentContext_->scopeDepth == 0) {
                 size_t globalIdx = currentContext_->chunk.addConstant(Value(varStmt->name.lexeme));
-                emitOp(OpCode::OP_DEFINE_GLOBAL, varStmt->name.line);
+                emitOp(varStmt->isConst ? OpCode::OP_DEFINE_CONST : OpCode::OP_DEFINE_GLOBAL, varStmt->name.line);
                 emitByte(static_cast<uint8_t>(globalIdx), varStmt->name.line);
             }
             break;
@@ -471,6 +471,58 @@ void Compiler::compileExpr(const Expr* expr) {
             // call map_set(obj, "field", val) — 3 arg
             emitOp(OpCode::OP_CALL, ln);
             emitByte(3, ln);
+            break;
+        }
+
+        case ASTNodeType::MATCH_EXPR: {
+            auto matchExpr = static_cast<const MatchExpr*>(expr);
+            // Compile target expression
+            compileExpr(matchExpr->target.get());
+
+            std::vector<size_t> endJumps;
+
+            for (const auto& c : matchExpr->cases) {
+                if (c.pattern == nullptr) { // Wildcard '_'
+                    // Pop target value
+                    emitOp(OpCode::OP_POP, 0);
+                    // Evaluate case result
+                    compileExpr(c.result.get());
+                    break; // Wildcard is always last
+                } else {
+                    // Duplicate target for comparison
+                    emitOp(OpCode::OP_DUP, 0);
+                    // Compile pattern
+                    compileExpr(c.pattern.get());
+                    // Compare target == pattern
+                    emitOp(OpCode::OP_EQUAL, 0);
+
+                    // Jump if false (if equal fails)
+                    emitOp(OpCode::OP_JUMP_IF_FALSE, 0);
+                    size_t elseJump = currentContext_->chunk.code.size();
+                    emitByte(0xff, 0);
+                    emitByte(0xff, 0);
+
+                    // If equal succeeds: pop target (leaving result on top)
+                    emitOp(OpCode::OP_POP, 0); // pop bool
+                    emitOp(OpCode::OP_POP, 0); // pop target
+                    compileExpr(c.result.get());
+
+                    // Jump to end of match
+                    emitOp(OpCode::OP_JUMP, 0);
+                    endJumps.push_back(currentContext_->chunk.code.size());
+                    emitByte(0xff, 0);
+                    emitByte(0xff, 0);
+
+                    // Patch else jump (when match case fails)
+                    patchJump(elseJump);
+                    emitOp(OpCode::OP_POP, 0); // pop bool condition
+                }
+            }
+
+            // Patch all end jumps
+            for (size_t endJump : endJumps) {
+                patchJump(endJump);
+            }
             break;
         }
     }

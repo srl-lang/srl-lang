@@ -19,6 +19,7 @@ enum class TokenType {
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
     ARROW, // ->
+    FAT_ARROW, // =>
     AND, OR, // && ||
 
     // Literals
@@ -27,6 +28,8 @@ enum class TokenType {
     // Keywords
     KEYWORD_FN,
     KEYWORD_VAR,
+    KEYWORD_CONST,
+    KEYWORD_MATCH,
     KEYWORD_IF,
     KEYWORD_ELSE,
     KEYWORD_WHILE,
@@ -68,6 +71,7 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::PERCENT: return "%";
         case TokenType::EQUAL: return "=";
         case TokenType::EQUAL_EQUAL: return "==";
+        case TokenType::FAT_ARROW: return "=>";
         case TokenType::BANG_EQUAL: return "!=";
         case TokenType::LESS: return "<";
         case TokenType::LESS_EQUAL: return "<=";
@@ -78,6 +82,8 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::NUMBER: return "NUMBER";
         case TokenType::KEYWORD_FN: return "fn";
         case TokenType::KEYWORD_VAR: return "var";
+        case TokenType::KEYWORD_CONST: return "const";
+        case TokenType::KEYWORD_MATCH: return "match";
         case TokenType::KEYWORD_IF: return "if";
         case TokenType::KEYWORD_ELSE: return "else";
         case TokenType::KEYWORD_WHILE: return "while";

@@ -19,7 +19,7 @@ private:
 
     // Statement parsers
     StmtPtr declaration();
-    StmtPtr varDeclaration();
+    StmtPtr varDeclaration(bool isConst = false);
     StmtPtr functionDeclaration();
     StmtPtr structDeclaration();
     StmtPtr statement();
@@ -43,6 +43,7 @@ private:
     ExprPtr call();
     ExprPtr finishCall(ExprPtr callee);
     ExprPtr primary();
+    ExprPtr matchExpression();
 
     // Parser utility helpers
     bool match(const std::vector<TokenType>& types);
