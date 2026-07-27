@@ -7,11 +7,22 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include <cstring>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket(s) close(s)
 #endif
 
 namespace srl {
@@ -34,7 +45,6 @@ void NET::registerNativeFunctions(VM& vm) {
     // net_http_get(url_host, path)
     vm.defineNative("net_http_get", [](int argCount, const Value* args) -> Value {
         ensureWinsock();
-#ifdef _WIN32
         if (argCount > 0 && args[0].isString()) {
             std::string host = args[0].asString();
             std::string path = (argCount > 1 && args[1].isString()) ? args[1].asString() : "/";
@@ -42,7 +52,6 @@ void NET::registerNativeFunctions(VM& vm) {
             // Remove http:// or https:// if present
             if (host.rfind("http://", 0) == 0) host = host.substr(7);
             else if (host.rfind("https://", 0) == 0) host = host.substr(8);
-
 
             size_t slashPos = host.find('/');
             if (slashPos != std::string::npos) {
@@ -84,14 +93,12 @@ void NET::registerNativeFunctions(VM& vm) {
             closesocket(s);
             return Value(response);
         }
-#endif
         return Value("");
     });
 
     // net_tcp_connect(host, port)
     vm.defineNative("net_tcp_connect", [](int argCount, const Value* args) -> Value {
         ensureWinsock();
-#ifdef _WIN32
         if (argCount >= 2 && args[0].isString() && args[1].isNumber()) {
             std::string host = args[0].asString();
             std::string portStr = std::to_string(static_cast<int>(args[1].asNumber()));
@@ -114,13 +121,11 @@ void NET::registerNativeFunctions(VM& vm) {
                 freeaddrinfo(res);
             }
         }
-#endif
         return Value(0.0);
     });
 
     // net_tcp_send(sock_id, data)
     vm.defineNative("net_tcp_send", [](int argCount, const Value* args) -> Value {
-#ifdef _WIN32
         if (argCount >= 2 && args[0].isNumber() && args[1].isString()) {
             double id = args[0].asNumber();
             std::string data = args[1].asString();
@@ -130,13 +135,11 @@ void NET::registerNativeFunctions(VM& vm) {
                 return Value(static_cast<double>(sent));
             }
         }
-#endif
         return Value(0.0);
     });
 
     // net_tcp_recv(sock_id, max_bytes)
     vm.defineNative("net_tcp_recv", [](int argCount, const Value* args) -> Value {
-#ifdef _WIN32
         if (argCount > 0 && args[0].isNumber()) {
             double id = args[0].asNumber();
             int maxB = (argCount > 1 && args[1].isNumber()) ? static_cast<int>(args[1].asNumber()) : 1024;
@@ -150,13 +153,11 @@ void NET::registerNativeFunctions(VM& vm) {
                 }
             }
         }
-#endif
         return Value("");
     });
 
     // net_tcp_close(sock_id)
     vm.defineNative("net_tcp_close", [](int argCount, const Value* args) -> Value {
-#ifdef _WIN32
         if (argCount > 0 && args[0].isNumber()) {
             double id = args[0].asNumber();
             auto it = openSockets.find(id);
@@ -166,7 +167,6 @@ void NET::registerNativeFunctions(VM& vm) {
                 return Value(true);
             }
         }
-#endif
         return Value(false);
     });
 }
