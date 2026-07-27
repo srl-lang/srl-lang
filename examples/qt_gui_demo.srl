@@ -5,7 +5,7 @@
 import("std/qt.srl");
 
 print("========================================================");
-print(" 🖼️ SRL QT DESKTOP GUI DEMO");
+print(" SRL QT DESKTOP GUI DEMO");
 print("========================================================");
 
 // 1. Initialize Qt Application Context
@@ -41,5 +41,5 @@ qt_layout_add(layout, btn_info);
 qt_exec();
 
 print("========================================================");
-print(" 🎉 Qt GUI Demo Completed Cleanly!");
+print(" Qt GUI Demo Completed Cleanly!");
 print("========================================================");

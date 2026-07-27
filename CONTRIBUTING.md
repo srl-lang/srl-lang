@@ -4,24 +4,24 @@ Thank you for your interest in contributing to **SRL (Serial Run Language)**! We
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Code of Conduct](#-code-of-conduct)
-- [How Can I Contribute?](#-how-can-i-contribute)
-- [Development Setup](#-development-setup)
-- [Running Tests](#-running-tests)
-- [Coding Style & Guidelines](#-coding-style--guidelines)
-- [Submitting a Pull Request](#-submitting-a-pull-request)
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+- [Development Setup](#development-setup)
+- [Running Tests](#running-tests)
+- [Coding Style & Guidelines](#coding-style--guidelines)
+- [Submitting a Pull Request](#submitting-a-pull-request)
 
 ---
 
-## 📜 Code of Conduct
+## Code of Conduct
 
 This project and everyone participating in it is governed by the [SRL Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ---
 
-## 💡 How Can I Contribute?
+## How Can I Contribute?
 
 - **Reporting Bugs:** Submit an issue using our [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.md).
 - **Suggesting Features:** Propose new ideas or enhancements via the [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.md).
@@ -30,7 +30,7 @@ This project and everyone participating in it is governed by the [SRL Code of Co
 
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
 ### Prerequisites
 
@@ -54,7 +54,7 @@ cmake --build build --config Release
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 Always run the full test suite before submitting a Pull Request:
 
@@ -71,7 +71,7 @@ Always run the full test suite before submitting a Pull Request:
 
 ---
 
-## 🎨 Coding Style & Guidelines
+## Coding Style & Guidelines
 
 - **C++ Standard:** C++17.
 - **Naming Conventions:**
@@ -82,7 +82,7 @@ Always run the full test suite before submitting a Pull Request:
 
 ---
 
-## 🔀 Submitting a Pull Request
+## Submitting a Pull Request
 
 1. Fork the repository and create your branch from `main`:
    ```bash

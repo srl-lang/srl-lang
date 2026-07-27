@@ -10,7 +10,7 @@ fn calculate_bonus(val) {
 fn update() {
     counter = counter + 1;
     var bonus = calculate_bonus(counter);
-    print("🔥 [" + app_name + "] Tick: " + to_string(counter) + " | LIVE SUPER BONUS: " + to_string(bonus));
+    print("[" + app_name + "] Tick: " + to_string(counter) + " | LIVE SUPER BONUS: " + to_string(bonus));
 }
 
 fn main() {

@@ -7,7 +7,7 @@ import("std/env.srl");
 import("std/http.srl");
 
 print("========================================================");
-print(" 📦 SRL PACKAGE & STANDARD LIBRARIES DEMO");
+print(" SRL PACKAGE & STANDARD LIBRARIES DEMO");
 print("========================================================");
 
 // 1. Math Module Verification
@@ -29,4 +29,4 @@ print("\n--- 2. System & Environment ---");
 print("Current OS     : " + to_string(env_os()));
 print("Working Dir    : " + to_string(env_pwd()));
 
-print("\n✨ Demo executed successfully!");
+print("\nDemo executed successfully!");

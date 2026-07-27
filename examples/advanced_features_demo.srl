@@ -7,7 +7,7 @@ import("std/sync.srl");
 import("std/testing.srl");
 
 print("========================================================");
-print(" 🚀 SRL v0.2.0 ADVANCED ECOSYSTEM & FEATURES DEMO");
+print(" SRL v0.2.0 ADVANCED ECOSYSTEM & FEATURES DEMO");
 print("========================================================");
 
 test_suite("SRL v0.2.0 Advanced Ecosystem Verification");
@@ -61,5 +61,5 @@ assert_eq(atomic_load(my_atomic), 150, "Atomic addition result");
 test_summary();
 
 print("========================================================");
-print(" 🎉 ALL ADVANCED FEATURES VERIFIED SUCCESSFULLY!");
+print(" ALL ADVANCED FEATURES VERIFIED SUCCESSFULLY!");
 print("========================================================");
