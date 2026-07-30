@@ -1,0 +1,70 @@
+// std/compiler/tokens.srl - SRL Self-Hosted Compiler Token System
+
+class Token {
+    var type;
+    var lexeme;
+    var line;
+    var column;
+
+    fn init(type_val, lexeme_val, line_val, col_val) {
+        this.type = type_val;
+        this.lexeme = lexeme_val;
+        this.line = line_val;
+        this.column = col_val;
+    }
+
+    fn toString() {
+        return "Token(" + to_string(this.type) + ", '" + this.lexeme + "')";
+    }
+}
+
+// Token Type Constants
+var TOKEN_EOF = 0;
+var TOKEN_NUMBER = 1;
+var TOKEN_STRING = 2;
+var TOKEN_IDENTIFIER = 3;
+
+// Keywords
+var TOKEN_FN = 10;
+var TOKEN_VAR = 11;
+var TOKEN_CONST = 12;
+var TOKEN_CLASS = 13;
+var TOKEN_STRUCT = 14;
+var TOKEN_UNION = 15;
+var TOKEN_ENUM = 16;
+var TOKEN_IF = 17;
+var TOKEN_ELSE = 18;
+var TOKEN_WHILE = 19;
+var TOKEN_FOR = 20;
+var TOKEN_RETURN = 21;
+var TOKEN_TRY = 22;
+var TOKEN_CATCH = 23;
+var TOKEN_THROW = 24;
+var TOKEN_MATCH = 25;
+var TOKEN_PUBLIC = 26;
+var TOKEN_PRIVATE = 27;
+var TOKEN_PROTECTED = 28;
+
+// Symbols
+var TOKEN_PLUS = 40;
+var TOKEN_MINUS = 41;
+var TOKEN_STAR = 42;
+var TOKEN_SLASH = 43;
+var TOKEN_PERCENT = 44;
+var TOKEN_EQUAL = 45;
+var TOKEN_EQUAL_EQUAL = 46;
+var TOKEN_BANG_EQUAL = 47;
+var TOKEN_LESS = 48;
+var TOKEN_GREATER = 49;
+var TOKEN_LEFT_PAREN = 50;
+var TOKEN_RIGHT_PAREN = 51;
+var TOKEN_BANG = 61;
+var TOKEN_LEFT_BRACE = 52;
+var TOKEN_RIGHT_BRACE = 53;
+var TOKEN_LEFT_BRACKET = 54;
+var TOKEN_RIGHT_BRACKET = 55;
+var TOKEN_COMMA = 56;
+var TOKEN_SEMICOLON = 57;
+var TOKEN_COLON = 58;
+var TOKEN_DOT = 59;
+var TOKEN_ARROW = 60;

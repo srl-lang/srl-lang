@@ -1,0 +1,40 @@
+// examples/test_access_control.srl - Class Access Control Verification
+
+print("========================================================");
+print(" SRL Class Access Control Specifiers Test Suite");
+print("========================================================");
+
+class BankAccount {
+public:
+    var owner;
+
+private:
+    var balance;
+
+public:
+    fn init(owner_name, initial_balance) {
+        this.owner = owner_name;
+        this.balance = initial_balance;
+    }
+
+    fn deposit(amount) {
+        this.balance = this.balance + amount;
+        return this.balance;
+    }
+
+    fn getBalance() {
+        return this.balance;
+    }
+}
+
+var acc = BankAccount("Alice", 1000);
+
+print("Account Owner (Public): " + acc.owner);
+print("Account Balance via method (Public method): " + to_string(acc.getBalance()));
+
+var newBal = acc.deposit(500);
+print("After deposit of 500, balance via method: " + to_string(newBal));
+
+print("========================================================");
+print(" SUCCESS: Class access control specifiers verified!");
+print("========================================================");

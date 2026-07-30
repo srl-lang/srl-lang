@@ -1,6 +1,6 @@
-// Test script for SRL full C++ parity features (FFI, SYS, Threading, GFX, NET)
+// Test script for SRL full native system capabilities (FFI, SYS, Threading, GFX, NET)
 
-print("=== SRL C++ SYSTEM CAPABILITIES TEST ===");
+print("=== SRL NATIVE SYSTEM CAPABILITIES TEST ===");
 
 // 1. System Diagnostics & Process Test
 print("\n--- 1. System & Diagnostics Test (`sys_*`) ---");
@@ -32,4 +32,4 @@ print("Thread started (Thread ID): " + to_string(tid));
 thread_join(tid);
 print("Thread completed.");
 
-print("\n=== ALL C++ SYSTEM CAPABILITIES VERIFIED SUCCESSFULLY ===");
+print("\n=== ALL NATIVE SYSTEM CAPABILITIES VERIFIED SUCCESSFULLY ===");

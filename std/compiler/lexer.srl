@@ -1,0 +1,174 @@
+// std/compiler/lexer.srl - SRL Self-Hosted Lexer Module
+
+import("std/compiler/tokens.srl");
+
+class Lexer {
+    var source;
+    var current;
+    var line;
+    var column;
+    var length;
+
+    fn init(source_code) {
+        print("[Lexer.init] initializing with source length " + to_string(str_len(source_code)));
+        this.source = source_code;
+        this.current = 0;
+        this.line = 1;
+        this.column = 1;
+        this.length = str_len(source_code);
+        print("[Lexer.init] completed init.");
+    }
+
+    fn isAtEnd() {
+        return this.current >= str_len(this.source);
+    }
+
+    fn peek() {
+        if (Lexer_isAtEnd(this)) { return ""; }
+        return str_sub(this.source, this.current, 1);
+    }
+
+    fn advance() {
+        if (Lexer_isAtEnd(this)) { return ""; }
+        var ch = str_sub(this.source, this.current, 1);
+        this.current = this.current + 1;
+        this.column = this.column + 1;
+        if (ch == "\n") {
+            this.line = this.line + 1;
+            this.column = 1;
+        }
+        return ch;
+    }
+
+    fn scanTokens() {
+        var tokens = arr_new();
+
+        while (!Lexer_isAtEnd(this)) {
+            var ch = Lexer_peek(this);
+
+            // Whitespace
+            if (ch == " " || ch == "\r" || ch == "\t" || ch == "\n") {
+                Lexer_advance(this);
+                continue;
+            }
+
+            // Line Comments
+            if (ch == "/" && (this.current + 1) < str_len(this.source) && str_sub(this.source, this.current + 1, 1) == "/") {
+                while (!Lexer_isAtEnd(this) && Lexer_peek(this) != "\n") {
+                    Lexer_advance(this);
+                }
+                continue;
+            }
+
+            // Double Operators (==, !=, ->)
+            if (ch == "=") {
+                Lexer_advance(this);
+                if (Lexer_peek(this) == "=") {
+                    Lexer_advance(this);
+                    arr_push(tokens, Token(TOKEN_EQUAL_EQUAL, "==", this.line, this.column));
+                } else {
+                    arr_push(tokens, Token(TOKEN_EQUAL, "=", this.line, this.column));
+                }
+                continue;
+            }
+
+            if (ch == "!") {
+                Lexer_advance(this);
+                if (Lexer_peek(this) == "=") {
+                    Lexer_advance(this);
+                    arr_push(tokens, Token(TOKEN_BANG_EQUAL, "!=", this.line, this.column));
+                } else {
+                    arr_push(tokens, Token(TOKEN_BANG, "!", this.line, this.column));
+                }
+                continue;
+            }
+
+            if (ch == "-") {
+                Lexer_advance(this);
+                if (Lexer_peek(this) == ">") {
+                    Lexer_advance(this);
+                    arr_push(tokens, Token(TOKEN_ARROW, "->", this.line, this.column));
+                } else {
+                    arr_push(tokens, Token(TOKEN_MINUS, "-", this.line, this.column));
+                }
+                continue;
+            }
+
+            // Single Character Tokens
+            if (ch == "+") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_PLUS, "+", this.line, this.column)); continue; }
+            if (ch == "*") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_STAR, "*", this.line, this.column)); continue; }
+            if (ch == "/") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_SLASH, "/", this.line, this.column)); continue; }
+            if (ch == "%") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_PERCENT, "%", this.line, this.column)); continue; }
+            if (ch == "(") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_LEFT_PAREN, "(", this.line, this.column)); continue; }
+            if (ch == ")") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_RIGHT_PAREN, ")", this.line, this.column)); continue; }
+            if (ch == "{") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_LEFT_BRACE, "{", this.line, this.column)); continue; }
+            if (ch == "}") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_RIGHT_BRACE, "}", this.line, this.column)); continue; }
+            if (ch == "[") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_LEFT_BRACKET, "[", this.line, this.column)); continue; }
+            if (ch == "]") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_RIGHT_BRACKET, "]", this.line, this.column)); continue; }
+            if (ch == ",") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_COMMA, ",", this.line, this.column)); continue; }
+            if (ch == ";") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_SEMICOLON, ";", this.line, this.column)); continue; }
+            if (ch == ":") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_COLON, ":", this.line, this.column)); continue; }
+            if (ch == ".") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_DOT, ".", this.line, this.column)); continue; }
+            if (ch == "<") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_LESS, "<", this.line, this.column)); continue; }
+            if (ch == ">") { Lexer_advance(this); arr_push(tokens, Token(TOKEN_GREATER, ">", this.line, this.column)); continue; }
+
+            // Strings
+            if (ch == "\"") {
+                Lexer_advance(this); // consume opening quote
+                var strVal = "";
+                while (!Lexer_isAtEnd(this) && Lexer_peek(this) != "\"") {
+                    strVal = strVal + Lexer_advance(this);
+                }
+                Lexer_advance(this); // consume closing quote
+                arr_push(tokens, Token(TOKEN_STRING, strVal, this.line, this.column));
+                continue;
+            }
+
+            // Numbers
+            if (ch == "0" || ch == "1" || ch == "2" || ch == "3" || ch == "4" || ch == "5" || ch == "6" || ch == "7" || ch == "8" || ch == "9") {
+                var numStr = "";
+                while (!Lexer_isAtEnd(this) && (Lexer_peek(this) == "0" || Lexer_peek(this) == "1" || Lexer_peek(this) == "2" || Lexer_peek(this) == "3" || Lexer_peek(this) == "4" || Lexer_peek(this) == "5" || Lexer_peek(this) == "6" || Lexer_peek(this) == "7" || Lexer_peek(this) == "8" || Lexer_peek(this) == "9" || Lexer_peek(this) == ".")) {
+                    numStr = numStr + Lexer_advance(this);
+                }
+                arr_push(tokens, Token(TOKEN_NUMBER, numStr, this.line, this.column));
+                continue;
+            }
+
+            // Identifiers and Keywords
+            var ident = "";
+            while (!Lexer_isAtEnd(this) && (Lexer_peek(this) != " " && Lexer_peek(this) != "\n" && Lexer_peek(this) != "\r" && Lexer_peek(this) != "\t" && Lexer_peek(this) != "(" && Lexer_peek(this) != ")" && Lexer_peek(this) != "{" && Lexer_peek(this) != "}" && Lexer_peek(this) != "[" && Lexer_peek(this) != "]" && Lexer_peek(this) != ";" && Lexer_peek(this) != "," && Lexer_peek(this) != "." && Lexer_peek(this) != ":" && Lexer_peek(this) != "=" && Lexer_peek(this) != "<" && Lexer_peek(this) != ">" && Lexer_peek(this) != "+" && Lexer_peek(this) != "-" && Lexer_peek(this) != "*" && Lexer_peek(this) != "/" && Lexer_peek(this) != "!" && Lexer_peek(this) != "%")) {
+                ident = ident + Lexer_advance(this);
+            }
+
+            if (str_len(ident) > 0) {
+                if (ident == "fn") { arr_push(tokens, Token(TOKEN_FN, ident, this.line, this.column)); }
+                else if (ident == "var") { arr_push(tokens, Token(TOKEN_VAR, ident, this.line, this.column)); }
+                else if (ident == "const") { arr_push(tokens, Token(TOKEN_CONST, ident, this.line, this.column)); }
+                else if (ident == "class") { arr_push(tokens, Token(TOKEN_CLASS, ident, this.line, this.column)); }
+                else if (ident == "struct") { arr_push(tokens, Token(TOKEN_STRUCT, ident, this.line, this.column)); }
+                else if (ident == "union") { arr_push(tokens, Token(TOKEN_UNION, ident, this.line, this.column)); }
+                else if (ident == "enum") { arr_push(tokens, Token(TOKEN_ENUM, ident, this.line, this.column)); }
+                else if (ident == "if") { arr_push(tokens, Token(TOKEN_IF, ident, this.line, this.column)); }
+                else if (ident == "else") { arr_push(tokens, Token(TOKEN_ELSE, ident, this.line, this.column)); }
+                else if (ident == "while") { arr_push(tokens, Token(TOKEN_WHILE, ident, this.line, this.column)); }
+                else if (ident == "for") { arr_push(tokens, Token(TOKEN_FOR, ident, this.line, this.column)); }
+                else if (ident == "return") { arr_push(tokens, Token(TOKEN_RETURN, ident, this.line, this.column)); }
+                else if (ident == "try") { arr_push(tokens, Token(TOKEN_TRY, ident, this.line, this.column)); }
+                else if (ident == "catch") { arr_push(tokens, Token(TOKEN_CATCH, ident, this.line, this.column)); }
+                else if (ident == "throw") { arr_push(tokens, Token(TOKEN_THROW, ident, this.line, this.column)); }
+                else if (ident == "match") { arr_push(tokens, Token(TOKEN_MATCH, ident, this.line, this.column)); }
+                else if (ident == "public") { arr_push(tokens, Token(TOKEN_PUBLIC, ident, this.line, this.column)); }
+                else if (ident == "private") { arr_push(tokens, Token(TOKEN_PRIVATE, ident, this.line, this.column)); }
+                else if (ident == "protected") { arr_push(tokens, Token(TOKEN_PROTECTED, ident, this.line, this.column)); }
+                else {
+                    arr_push(tokens, Token(TOKEN_IDENTIFIER, ident, this.line, this.column));
+                }
+            } else {
+                Lexer_advance(this);
+            }
+        }
+
+        arr_push(tokens, Token(TOKEN_EOF, "", this.line, this.column));
+        return tokens;
+    }
+}

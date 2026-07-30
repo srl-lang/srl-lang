@@ -37,9 +37,16 @@ enum class ASTNodeType {
     RETURN_STMT,
     FUNCTION_STMT,
     STRUCT_STMT,
+    UNION_STMT,
+    ENUM_STMT,
+    CLASS_STMT,
     TRY_CATCH_STMT,
-    THROW_STMT
+    THROW_STMT,
+    DEFER_STMT,
+    BREAK_STMT,
+    CONTINUE_STMT
 };
+
 
 struct ASTNode {
     virtual ~ASTNode() = default;
@@ -137,8 +144,9 @@ struct VarStmt : public Stmt {
     Token name;
     ExprPtr initializer;
     bool isConst;
-    VarStmt(Token name, ExprPtr init, bool isConst = false)
-        : name(std::move(name)), initializer(std::move(init)), isConst(isConst) {}
+    std::string typeAnnotation;
+    VarStmt(Token name, ExprPtr init, bool isConst = false, std::string typeAnnotation = "")
+        : name(std::move(name)), initializer(std::move(init)), isConst(isConst), typeAnnotation(std::move(typeAnnotation)) {}
     ASTNodeType getType() const override { return ASTNodeType::VAR_STMT; }
 };
 
@@ -178,13 +186,21 @@ struct AwaitExpr : public Expr {
     ASTNodeType getType() const override { return ASTNodeType::AWAIT_EXPR; }
 };
 
+struct Param {
+    Token name;
+    std::string typeAnnotation;
+    Param(Token name, std::string typeAnnotation = "")
+        : name(std::move(name)), typeAnnotation(std::move(typeAnnotation)) {}
+};
+
 struct FunctionStmt : public Stmt {
     Token name;
-    std::vector<Token> params;
+    std::vector<Param> params;
     std::vector<StmtPtr> body;
     bool isAsync;
-    FunctionStmt(Token name, std::vector<Token> params, std::vector<StmtPtr> body, bool isAsync = false)
-        : name(std::move(name)), params(std::move(params)), body(std::move(body)), isAsync(isAsync) {}
+    std::string returnTypeAnnotation;
+    FunctionStmt(Token name, std::vector<Param> params, std::vector<StmtPtr> body, bool isAsync = false, std::string returnTypeAnnotation = "")
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)), isAsync(isAsync), returnTypeAnnotation(std::move(returnTypeAnnotation)) {}
     ASTNodeType getType() const override { return ASTNodeType::FUNCTION_STMT; }
 };
 
@@ -195,6 +211,60 @@ struct StructStmt : public Stmt {
         : name(std::move(name)), fields(std::move(fields)) {}
     ASTNodeType getType() const override { return ASTNodeType::STRUCT_STMT; }
 };
+
+struct UnionStmt : public Stmt {
+    Token name;
+    std::vector<Token> fields;
+    UnionStmt(Token name, std::vector<Token> fields)
+        : name(std::move(name)), fields(std::move(fields)) {}
+    ASTNodeType getType() const override { return ASTNodeType::UNION_STMT; }
+};
+
+struct EnumItem {
+    Token name;
+    ExprPtr value;
+    EnumItem(Token name, ExprPtr value = nullptr)
+        : name(std::move(name)), value(std::move(value)) {}
+};
+
+struct EnumStmt : public Stmt {
+    Token name;
+    std::vector<EnumItem> items;
+    EnumStmt(Token name, std::vector<EnumItem> items)
+        : name(std::move(name)), items(std::move(items)) {}
+    ASTNodeType getType() const override { return ASTNodeType::ENUM_STMT; }
+};
+
+enum class AccessModifier { PUBLIC, PRIVATE, PROTECTED };
+
+struct ClassField {
+    Token name;
+    AccessModifier access;
+    ClassField(Token name, AccessModifier access = AccessModifier::PUBLIC)
+        : name(std::move(name)), access(access) {}
+};
+
+struct ClassMethod {
+    Token name;
+    std::vector<Param> params;
+    std::vector<StmtPtr> body;
+    bool isStatic;
+    std::string returnTypeAnnotation;
+    AccessModifier access;
+    ClassMethod(Token name, std::vector<Param> params, std::vector<StmtPtr> body, bool isStatic = false, std::string returnTypeAnnotation = "", AccessModifier access = AccessModifier::PUBLIC)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)), isStatic(isStatic), returnTypeAnnotation(std::move(returnTypeAnnotation)), access(access) {}
+};
+
+struct ClassStmt : public Stmt {
+    Token name;
+    std::vector<Token> fields;
+    std::vector<ClassMethod> methods;
+    std::vector<ClassField> classFields;
+    ClassStmt(Token name, std::vector<Token> fields, std::vector<ClassMethod> methods, std::vector<ClassField> classFields = {})
+        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)), classFields(std::move(classFields)) {}
+    ASTNodeType getType() const override { return ASTNodeType::CLASS_STMT; }
+};
+
 
 struct TryCatchStmt : public Stmt {
     StmtPtr tryBranch;
@@ -222,6 +292,24 @@ struct ForStmt : public Stmt {
         : initializer(std::move(init)), condition(std::move(cond)),
           increment(std::move(incr)), body(std::move(body)) {}
     ASTNodeType getType() const override { return ASTNodeType::FOR_STMT; }
+};
+
+struct DeferStmt : public Stmt {
+    StmtPtr statement;
+    explicit DeferStmt(StmtPtr stmt) : statement(std::move(stmt)) {}
+    ASTNodeType getType() const override { return ASTNodeType::DEFER_STMT; }
+};
+
+struct BreakStmt : public Stmt {
+    Token keyword;
+    explicit BreakStmt(Token kw) : keyword(std::move(kw)) {}
+    ASTNodeType getType() const override { return ASTNodeType::BREAK_STMT; }
+};
+
+struct ContinueStmt : public Stmt {
+    Token keyword;
+    explicit ContinueStmt(Token kw) : keyword(std::move(kw)) {}
+    ASTNodeType getType() const override { return ASTNodeType::CONTINUE_STMT; }
 };
 
 } // namespace srl

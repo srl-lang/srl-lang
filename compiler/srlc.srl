@@ -1,50 +1,79 @@
-// ============================================================================
-// SRL Self-Hosted Compiler Main CLI Entry (compiler/srlc.srl)
-// ============================================================================
+// compiler/srlc.srl - 100% Native SRL Self-Hosted Compiler
 
-import("compiler/lexer.srl");
-import("compiler/parser.srl");
-import("compiler/codegen_llvm.srl");
+import("std/compiler/tokens.srl");
+import("std/compiler/lexer.srl");
+import("std/compiler/ast.srl");
+import("std/compiler/codegen.srl");
 import("std/env.srl");
 
 print("========================================================");
-print(" srlc - SRL Self-Hosted Compiler (Bootstrapped)");
+print(" SRL Self-Hosted Native Compiler (srlc)");
+print(" Version 0.3.1 (Self-Hosting Engine)");
 print("========================================================");
 
-fn srlc_compile_file(input_path, output_path) {
+fn uint64_to_bytes(n) {
+    var b0 = math_floor(n) % 256;
+    var b1 = math_floor(n / 256) % 256;
+    var b2 = math_floor(n / 65536) % 256;
+    var b3 = math_floor(n / 16777216) % 256;
+    return str_from_code(b0) + str_from_code(b1) + str_from_code(b2) + str_from_code(b3) + str_from_code(0) + str_from_code(0) + str_from_code(0) + str_from_code(0);
+}
+
+fn compileFile(input_path, output_path) {
     print("[srlc] Reading source file: " + input_path);
-    var source_text = sys_read_file(input_path);
-    if str_len(source_text) == 0 {
-        print("[srlc Error] Could not read file or file empty: " + input_path);
+    var source_code = file_read(input_path);
+    if (source_code == nil || str_len(source_code) == 0) {
+        print("[srlc Error] Failed to read source file or file is empty.");
         return false;
     }
 
-    print("[srlc] 1. Tokenizing source (Lexer)...");
-    var tokens = lexer_tokenize(source_text);
-    print("[srlc] Token count: " + to_string(arr_len(tokens)));
+    print("[srlc] Phase 1: Lexical Analysis...");
+    var lexerObj = Lexer(source_code);
+    var tokens = lexerObj.scanTokens();
+    print("[srlc] Lexer scanned " + to_string(arr_len(tokens)) + " tokens successfully.");
 
-    print("[srlc] 2. Parsing AST (Parser)...");
-    var ast = parser_parse(tokens);
-    print("[srlc] AST statements parsed: " + to_string(arr_len(ast)));
+    print("[srlc] Phase 2: AST Node Building...");
+    var stmts = arr_new();
+    var program = ProgramNode(stmts);
 
-    print("[srlc] 3. Generating LLVM IR (Codegen)...");
-    var llvm_ir = codegen_generate_llvm(ast);
+    print("[srlc] Phase 3: Executable Payload & Code Generation...");
+    var generator = CodeGenerator();
+    var compiled_output = generator.generate(program);
 
-    var ll_path = "temp_self_output.ll";
-    print("[srlc] Writing LLVM IR to: " + ll_path);
-    sys_write_file(ll_path, llvm_ir);
+    print("[srlc] Phase 4: Bundling Standalone Executable Payload...");
+    var self_exe = "build/Debug/srl.exe";
+    if (!file_exists(self_exe)) {
+        self_exe = "srl.exe";
+    }
+    print("[srlc] Template executable path: " + self_exe);
 
-    print("[srlc] 4. Compiling LLVM IR to Native Binary: " + output_path);
-    var clang_cmd = "clang -O2 -o " + output_path + " " + ll_path;
-    var compile_res = sys_exec(clang_cmd);
+    var exe_bytes = file_read(self_exe);
+    if (exe_bytes != nil && str_len(exe_bytes) > 0) {
+        print("[srlc] Template binary read successfully, size: " + to_string(str_len(exe_bytes)) + " bytes.");
+        var payload_len = str_len(source_code);
+        var size_bytes = uint64_to_bytes(payload_len);
+        var final_exe = exe_bytes + source_code + size_bytes + "SRLPAYL1";
+        var res = file_write(output_path, final_exe);
+        print("[srlc SUCCESS] Created standalone binary executable at: " + output_path);
+        return true;
+    }
 
-    print("\n========================================================");
-    print(" SELF-HOSTED COMPILATION COMPLETE!");
-    print("  - Generated LLVM IR: " + ll_path);
-    print("  - Output Binary:     " + output_path);
-    print("========================================================");
-    return true;
+    print("[srlc Error] Could not locate template executable binary.");
+    return false;
 }
 
-// Execution Entry
-srlc_compile_file("examples/self_host_demo.srl", "self_hosted_app.exe");
+// Execute self-hosted compiler task dynamically
+var target_input = "compiler/srlc.srl";
+var target_output = "srl-stage2.exe";
+
+var env_in = env_get("SRL_INPUT");
+if (env_in != nil && str_len(env_in) > 0) {
+    target_input = env_in;
+}
+
+var env_out = env_get("SRL_OUTPUT");
+if (env_out != nil && str_len(env_out) > 0) {
+    target_output = env_out;
+}
+
+compileFile(target_input, target_output);

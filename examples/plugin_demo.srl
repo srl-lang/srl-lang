@@ -1,0 +1,38 @@
+// examples/plugin_demo.srl - Dynamic Native Plugin System Demo
+// Demonstrates loading external DLL plugins at runtime without recompiling srl.exe.
+
+import("std/plugin.srl");
+
+print("========================================================");
+print(" SRL Dynamic Native Plugin System");
+print("========================================================");
+
+// 1. Check initial loaded plugins
+print("Initial loaded plugins count: " + to_string(srl_plugin_count()));
+
+// 2. Load the example plugin DLL dynamically
+var dllPath = "build_plugin_test/plugins/example_plugin/Release/example_plugin.dll";
+print("Loading plugin DLL from: " + dllPath);
+
+var ok = import_native(dllPath, "example_plugin");
+print("Plugin loaded status: " + to_string(ok));
+
+// 3. List loaded plugins
+print("Currently loaded plugins:");
+plugin_list();
+
+// 4. Call native functions exported by the dynamically loaded DLL!
+print("Calling dynamic functions exported by example_plugin.dll:");
+
+var sum = example_add(100, 250);
+print("  example_add(100, 250) -> " + to_string(sum));
+
+var greeting = example_greet("SRL Developer");
+print("  example_greet -> " + greeting);
+
+var ver = example_version();
+print("  example_version -> " + ver);
+
+print("========================================================");
+print(" SUCCESS: Native plugin loaded and executed dynamically!");
+print("========================================================");

@@ -47,6 +47,14 @@ private:
     void endScope(int line);
     void declareVariable(const Token& name);
     int resolveLocal(const Token& name);
+
+    // Loop context for break/continue
+    struct LoopContext {
+        size_t loopStart;                   // byte offset of the condition check (for continue)
+        std::vector<size_t> breakJumps;     // unpatched OP_JUMP offsets for break
+        std::vector<size_t> continueJumps;  // unpatched OP_JUMP offsets for continue
+    };
+    std::vector<LoopContext> loopStack_;
 };
 
 } // namespace srl

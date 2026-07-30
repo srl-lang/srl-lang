@@ -1,0 +1,82 @@
+// examples/advanced_features_test.srl - Advanced Language Feature Extensions Demo
+// Tests const, enum, bitwise operators, and class OOP structures in SRL.
+
+print("========================================================");
+print(" SRL Advanced Feature Extensions Verification Suite");
+print("========================================================");
+
+// --- 1. Const Variables ---
+print("\n--- 1. Const Variables (`const`) ---");
+const MAX_LIMIT = 500;
+print("Const MAX_LIMIT = " + to_string(MAX_LIMIT));
+
+// --- 2. Enum Constructs ---
+print("\n--- 2. Enum Constructs (`enum`) ---");
+enum EngineState {
+    STOPPED = 0,
+    INITIALIZING = 1,
+    RUNNING = 2,
+    PAUSED = 3
+}
+
+var state = EngineState.RUNNING;
+print("EngineState.RUNNING = " + to_string(state));
+print("EngineState_PAUSED  = " + to_string(EngineState_PAUSED));
+
+if (state == EngineState.RUNNING) {
+    print("Verification: Enum comparison works cleanly!");
+}
+
+// --- 3. Bitwise Operators ---
+print("\n--- 3. Bitwise Operators (`&`, `|`, `^`, `~`, `<<`, `>>`) ---");
+var flagA = 0x01; // 1
+var flagB = 0x04; // 4
+var combined = flagA | flagB; // 5
+print("Bitwise OR (1 | 4) = " + to_string(combined));
+
+var masked = combined & 0x01;
+print("Bitwise AND (5 & 1) = " + to_string(masked));
+
+var xorVal = 5 ^ 1;
+print("Bitwise XOR (5 ^ 1) = " + to_string(xorVal));
+
+var shiftedLeft = 1 << 4;
+print("Bitwise Left Shift (1 << 4) = " + to_string(shiftedLeft));
+
+var shiftedRight = 16 >> 2;
+print("Bitwise Right Shift (16 >> 2) = " + to_string(shiftedRight));
+
+var bitNot = ~0;
+print("Bitwise NOT (~0) = " + to_string(bitNot));
+
+// --- 4. Object-Oriented Classes ---
+print("\n--- 4. Object-Oriented Classes (`class`) ---");
+class Vector2D {
+    var x;
+    var y;
+
+    fn init(x_val, y_val) {
+        this.x = x_val;
+        this.y = y_val;
+    }
+
+    fn add(other) {
+        return Vector2D(this.x + other.x, this.y + other.y);
+    }
+
+    fn toString() {
+        return "Vector2D(" + to_string(this.x) + ", " + to_string(this.y) + ")";
+    }
+}
+
+var v1 = Vector2D(10, 20);
+var v2 = Vector2D(30, 40);
+var v3 = v1.add(v2);
+
+print("v1 = " + v1.toString());
+print("v2 = " + v2.toString());
+print("v3 = v1.add(v2) -> " + v3.toString());
+
+print("\n========================================================");
+print(" SUCCESS: All advanced language extension features verified!");
+print("========================================================");

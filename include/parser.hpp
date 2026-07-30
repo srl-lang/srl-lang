@@ -22,6 +22,9 @@ private:
     StmtPtr varDeclaration(bool isConst = false);
     StmtPtr functionDeclaration(bool isAsync = false);
     StmtPtr structDeclaration();
+    StmtPtr unionDeclaration();
+    StmtPtr enumDeclaration();
+    StmtPtr classDeclaration();
     StmtPtr statement();
     StmtPtr blockStatement();
     StmtPtr ifStatement();
@@ -37,8 +40,12 @@ private:
     ExprPtr assignment();
     ExprPtr logicalOr();
     ExprPtr logicalAnd();
+    ExprPtr bitwiseOr();
+    ExprPtr bitwiseXor();
+    ExprPtr bitwiseAnd();
     ExprPtr equality();
     ExprPtr comparison();
+    ExprPtr shift();
     ExprPtr term();
     ExprPtr factor();
     ExprPtr unary();
@@ -46,6 +53,7 @@ private:
     ExprPtr finishCall(ExprPtr callee);
     ExprPtr primary();
     ExprPtr matchExpression();
+
 
     // Parser utility helpers
     bool match(const std::vector<TokenType>& types);

@@ -43,8 +43,135 @@ StmtPtr Parser::declaration() {
     if (match({TokenType::KEYWORD_VAR})) return varDeclaration(false);
     if (match({TokenType::KEYWORD_CONST})) return varDeclaration(true);
     if (match({TokenType::KEYWORD_STRUCT})) return structDeclaration();
+    if (match({TokenType::KEYWORD_UNION})) return unionDeclaration();
+    if (match({TokenType::KEYWORD_ENUM})) return enumDeclaration();
+    if (match({TokenType::KEYWORD_CLASS})) return classDeclaration();
     return statement();
 }
+
+StmtPtr Parser::enumDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect enum name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before enum body.");
+
+    std::vector<EnumItem> items;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            Token itemToken = consume(TokenType::IDENTIFIER, "Expect enum item name.");
+            ExprPtr valExpr = nullptr;
+            if (match({TokenType::EQUAL})) {
+                valExpr = expression();
+            }
+            items.emplace_back(itemToken, std::move(valExpr));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after enum body.");
+    return std::make_unique<EnumStmt>(std::move(name), std::move(items));
+}
+
+StmtPtr Parser::classDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect class name.");
+    if (match({TokenType::LESS})) {
+        do {
+            consume(TokenType::IDENTIFIER, "Expect generic type parameter name.");
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
+    }
+    consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
+
+    std::vector<Token> fields;
+    std::vector<ClassField> classFields;
+    std::vector<ClassMethod> methods;
+
+    AccessModifier currentAccess = AccessModifier::PUBLIC;
+
+    while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+        if (match({TokenType::KEYWORD_PUBLIC})) {
+            currentAccess = AccessModifier::PUBLIC;
+            match({TokenType::COLON});
+        } else if (match({TokenType::KEYWORD_PRIVATE})) {
+            currentAccess = AccessModifier::PRIVATE;
+            match({TokenType::COLON});
+        } else if (match({TokenType::KEYWORD_PROTECTED})) {
+            currentAccess = AccessModifier::PROTECTED;
+            match({TokenType::COLON});
+        } else if (match({TokenType::KEYWORD_VAR})) {
+            do {
+                Token fTok = consume(TokenType::IDENTIFIER, "Expect field name in class.");
+                fields.push_back(fTok);
+                classFields.emplace_back(fTok, currentAccess);
+            } while (match({TokenType::COMMA}));
+            match({TokenType::SEMICOLON});
+        } else if (match({TokenType::KEYWORD_FN})) {
+            Token methodName(TokenType::IDENTIFIER, "", 0, 0);
+            if (match({TokenType::KEYWORD_OPERATOR})) {
+                std::string opName = "";
+                int line = previous().line;
+                int col = previous().column;
+                if (match({TokenType::PLUS})) opName = "__add";
+                else if (match({TokenType::MINUS})) opName = "__sub";
+                else if (match({TokenType::STAR})) opName = "__mul";
+                else if (match({TokenType::SLASH})) opName = "__div";
+                else if (match({TokenType::PERCENT})) opName = "__mod";
+                else if (match({TokenType::EQUAL_EQUAL})) opName = "__eq";
+                else if (match({TokenType::BANG_EQUAL})) opName = "__ne";
+                else if (check(TokenType::LEFT_PAREN)) {
+                    advance();
+                    consume(TokenType::RIGHT_PAREN, "Expect ')' after '(' for operator().");
+                    opName = "__call";
+                } else if (check(TokenType::LEFT_BRACKET)) {
+                    advance();
+                    consume(TokenType::RIGHT_BRACKET, "Expect ']' after '[' for operator[].");
+                    opName = "__index";
+                } else {
+                    throw std::runtime_error("Expect operator symbol (+, -, *, /, %, [], (), ==, !=) after 'operator'.");
+                }
+                methodName = Token(TokenType::IDENTIFIER, opName, line, col);
+            } else {
+                methodName = consume(TokenType::IDENTIFIER, "Expect method name.");
+            }
+            if (match({TokenType::LESS})) {
+                do {
+                    consume(TokenType::IDENTIFIER, "Expect generic type parameter name.");
+                } while (match({TokenType::COMMA}));
+                consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
+            }
+            consume(TokenType::LEFT_PAREN, "Expect '(' after method name.");
+            std::vector<Param> params;
+            if (!check(TokenType::RIGHT_PAREN)) {
+                do {
+                    Token pName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                    std::string pType = "";
+                    if (match({TokenType::COLON})) {
+                        Token typeTok = consume(TokenType::IDENTIFIER, "Expect parameter type after ':'.");
+                        pType = typeTok.lexeme;
+                    }
+                    params.emplace_back(std::move(pName), std::move(pType));
+                } while (match({TokenType::COMMA}));
+            }
+            consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+
+            std::string returnType = "";
+            if (match({TokenType::ARROW}) || match({TokenType::COLON})) {
+                Token typeTok = consume(TokenType::IDENTIFIER, "Expect return type after '->' or ':'.");
+                returnType = typeTok.lexeme;
+            }
+
+            consume(TokenType::LEFT_BRACE, "Expect '{' before method body.");
+
+            std::vector<StmtPtr> body;
+            while (!check(TokenType::RIGHT_BRACE) && !isAtEnd()) {
+                body.push_back(declaration());
+            }
+            consume(TokenType::RIGHT_BRACE, "Expect '}' after method body.");
+            methods.emplace_back(methodName, std::move(params), std::move(body), false, std::move(returnType), currentAccess);
+        } else {
+            advance();
+        }
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
+    return std::make_unique<ClassStmt>(std::move(name), std::move(fields), std::move(methods), std::move(classFields));
+}
+
 
 StmtPtr Parser::structDeclaration() {
     Token name = consume(TokenType::IDENTIFIER, "Expect struct name.");
@@ -61,21 +188,50 @@ StmtPtr Parser::structDeclaration() {
     return std::make_unique<StructStmt>(std::move(name), std::move(fields));
 }
 
+StmtPtr Parser::unionDeclaration() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect union name.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before union body.");
+
+    std::vector<Token> fields;
+    if (!check(TokenType::RIGHT_BRACE)) {
+        do {
+            fields.push_back(consume(TokenType::IDENTIFIER, "Expect field name in union."));
+        } while (match({TokenType::COMMA}));
+    }
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after union body.");
+
+    return std::make_unique<UnionStmt>(std::move(name), std::move(fields));
+}
+
 StmtPtr Parser::functionDeclaration(bool isAsync) {
     Token name = consume(TokenType::IDENTIFIER, "Expect function name.");
+    if (match({TokenType::LESS})) {
+        do {
+            consume(TokenType::IDENTIFIER, "Expect generic type parameter name.");
+        } while (match({TokenType::COMMA}));
+        consume(TokenType::GREATER, "Expect '>' after generic type parameters.");
+    }
     consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
     
-    std::vector<Token> parameters;
+    std::vector<Param> parameters;
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
-            parameters.push_back(consume(TokenType::IDENTIFIER, "Expect parameter name."));
+            Token pName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            std::string pType = "";
+            if (match({TokenType::COLON})) {
+                Token typeTok = consume(TokenType::IDENTIFIER, "Expect parameter type after ':'.");
+                pType = typeTok.lexeme;
+            }
+            parameters.emplace_back(std::move(pName), std::move(pType));
         } while (match({TokenType::COMMA}));
     }
     consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
 
-    // Optional return type annotation (e.g. -> int)
-    if (match({TokenType::ARROW})) {
-        consume(TokenType::IDENTIFIER, "Expect return type after '->'.");
+    // Optional return type annotation (e.g. -> int or : int)
+    std::string returnType = "";
+    if (match({TokenType::ARROW}) || match({TokenType::COLON})) {
+        Token typeTok = consume(TokenType::IDENTIFIER, "Expect return type after '->' or ':'.");
+        returnType = typeTok.lexeme;
     }
 
     consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
@@ -86,15 +242,17 @@ StmtPtr Parser::functionDeclaration(bool isAsync) {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after function body.");
 
-    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(body), isAsync);
+    return std::make_unique<FunctionStmt>(std::move(name), std::move(parameters), std::move(body), isAsync, std::move(returnType));
 }
 
 StmtPtr Parser::varDeclaration(bool isConst) {
     Token name = consume(TokenType::IDENTIFIER, "Expect variable name.");
     
     // Optional type annotation (e.g. : int)
+    std::string typeAnn = "";
     if (match({TokenType::COLON})) {
-        consume(TokenType::IDENTIFIER, "Expect type name after ':'.");
+        Token typeTok = consume(TokenType::IDENTIFIER, "Expect type name after ':'.");
+        typeAnn = typeTok.lexeme;
     }
 
     ExprPtr initializer = nullptr;
@@ -105,7 +263,7 @@ StmtPtr Parser::varDeclaration(bool isConst) {
     }
 
     match({TokenType::SEMICOLON}); // optional trailing semicolon
-    return std::make_unique<VarStmt>(std::move(name), std::move(initializer), isConst);
+    return std::make_unique<VarStmt>(std::move(name), std::move(initializer), isConst, std::move(typeAnn));
 }
 
 StmtPtr Parser::statement() {
@@ -115,6 +273,16 @@ StmtPtr Parser::statement() {
     if (match({TokenType::KEYWORD_RETURN})) return returnStatement();
     if (match({TokenType::KEYWORD_TRY})) return tryCatchStatement();
     if (match({TokenType::KEYWORD_THROW})) return throwStatement();
+    if (match({TokenType::KEYWORD_BREAK})) {
+        Token kw = previous();
+        match({TokenType::SEMICOLON});
+        return std::make_unique<BreakStmt>(std::move(kw));
+    }
+    if (match({TokenType::KEYWORD_CONTINUE})) {
+        Token kw = previous();
+        match({TokenType::SEMICOLON});
+        return std::make_unique<ContinueStmt>(std::move(kw));
+    }
     if (match({TokenType::LEFT_BRACE})) return blockStatement();
     return expressionStatement();
 }
@@ -122,7 +290,11 @@ StmtPtr Parser::statement() {
 StmtPtr Parser::tryCatchStatement() {
     StmtPtr tryBranch = statement();
     consume(TokenType::KEYWORD_CATCH, "Expect 'catch' after try block.");
+    bool hasParen = match({TokenType::LEFT_PAREN});
     Token catchVar = consume(TokenType::IDENTIFIER, "Expect catch variable name.");
+    if (hasParen) {
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after catch variable.");
+    }
     StmtPtr catchBranch = statement();
     return std::make_unique<TryCatchStmt>(std::move(tryBranch), std::move(catchVar), std::move(catchBranch));
 }
@@ -360,8 +532,38 @@ ExprPtr Parser::logicalOr() {
 }
 
 ExprPtr Parser::logicalAnd() {
-    ExprPtr expr = equality();
+    ExprPtr expr = bitwiseOr();
     while (match({TokenType::AND})) {
+        Token op = previous();
+        ExprPtr right = bitwiseOr();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+    return expr;
+}
+
+ExprPtr Parser::bitwiseOr() {
+    ExprPtr expr = bitwiseXor();
+    while (match({TokenType::PIPE})) {
+        Token op = previous();
+        ExprPtr right = bitwiseXor();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+    return expr;
+}
+
+ExprPtr Parser::bitwiseXor() {
+    ExprPtr expr = bitwiseAnd();
+    while (match({TokenType::CARET})) {
+        Token op = previous();
+        ExprPtr right = bitwiseAnd();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+    return expr;
+}
+
+ExprPtr Parser::bitwiseAnd() {
+    ExprPtr expr = equality();
+    while (match({TokenType::AMPERSAND})) {
         Token op = previous();
         ExprPtr right = equality();
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
@@ -380,8 +582,18 @@ ExprPtr Parser::equality() {
 }
 
 ExprPtr Parser::comparison() {
-    ExprPtr expr = term();
+    ExprPtr expr = shift();
     while (match({TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL})) {
+        Token op = previous();
+        ExprPtr right = shift();
+        expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
+    }
+    return expr;
+}
+
+ExprPtr Parser::shift() {
+    ExprPtr expr = term();
+    while (match({TokenType::BIT_LSHIFT, TokenType::BIT_RSHIFT})) {
         Token op = previous();
         ExprPtr right = term();
         expr = std::make_unique<BinaryExpr>(std::move(expr), std::move(op), std::move(right));
@@ -415,7 +627,7 @@ ExprPtr Parser::unary() {
         ExprPtr right = unary();
         return std::make_unique<AwaitExpr>(std::move(keyword), std::move(right));
     }
-    if (match({TokenType::BANG, TokenType::MINUS})) {
+    if (match({TokenType::BANG, TokenType::MINUS, TokenType::TILDE})) {
         Token op = previous();
         ExprPtr right = unary();
         return std::make_unique<UnaryExpr>(std::move(op), std::move(right));
@@ -423,11 +635,33 @@ ExprPtr Parser::unary() {
     return call();
 }
 
+
 ExprPtr Parser::call() {
     ExprPtr expr = primary();
 
     while (true) {
-        if (match({TokenType::LEFT_PAREN})) {
+        if (check(TokenType::LESS) && (expr->getType() == ASTNodeType::VARIABLE_EXPR || expr->getType() == ASTNodeType::GET_FIELD_EXPR)) {
+            size_t saved = current_;
+            advance();
+            bool isGenericCall = false;
+            if (check(TokenType::IDENTIFIER)) {
+                advance();
+                if (check(TokenType::COMMA) || check(TokenType::GREATER)) {
+                    isGenericCall = true;
+                }
+            }
+            current_ = saved;
+
+            if (isGenericCall) {
+                advance();
+                do {
+                    consume(TokenType::IDENTIFIER, "Expect generic type argument.");
+                } while (match({TokenType::COMMA}));
+                consume(TokenType::GREATER, "Expect '>' after generic type arguments.");
+            } else {
+                break;
+            }
+        } else if (match({TokenType::LEFT_PAREN})) {
             expr = finishCall(std::move(expr));
         } else if (match({TokenType::DOT})) {
             // obj.field  →  GetFieldExpr
@@ -477,8 +711,22 @@ ExprPtr Parser::matchExpression() {
             ExprPtr result = expression();
             match({TokenType::COMMA, TokenType::SEMICOLON});
             cases.emplace_back(nullptr, std::move(result));
+        } else if (check(TokenType::IDENTIFIER) && peek().lexeme == "_") {
+            advance();
+            if (!match({TokenType::FAT_ARROW}) && !match({TokenType::ARROW})) {
+                consume(TokenType::FAT_ARROW, "Expect '=>' after '_'.");
+            }
+            ExprPtr result = expression();
+            match({TokenType::COMMA, TokenType::SEMICOLON});
+            cases.emplace_back(nullptr, std::move(result));
         } else {
-            throw std::runtime_error("Expect 'case' or 'default' inside match expression.");
+            ExprPtr pattern = expression();
+            if (!match({TokenType::FAT_ARROW}) && !match({TokenType::ARROW})) {
+                consume(TokenType::FAT_ARROW, "Expect '=>' after match pattern.");
+            }
+            ExprPtr result = expression();
+            match({TokenType::COMMA, TokenType::SEMICOLON});
+            cases.emplace_back(std::move(pattern), std::move(result));
         }
     }
 
@@ -501,9 +749,10 @@ ExprPtr Parser::primary() {
         return std::make_unique<LiteralExpr>(Value(previous().lexeme));
     }
 
-    if (match({TokenType::IDENTIFIER})) {
+    if (match({TokenType::IDENTIFIER, TokenType::KEYWORD_THIS})) {
         return std::make_unique<VariableExpr>(previous());
     }
+
 
     if (match({TokenType::LEFT_PAREN})) {
         ExprPtr expr = expression();

@@ -46,9 +46,19 @@ enum class OpCode : uint8_t {
     OP_BITWISE_AND,
     OP_BITWISE_OR,
     OP_BITWISE_XOR,
+    OP_BITWISE_NOT,
+    OP_BITWISE_SHL,
+    OP_BITWISE_SHR,
+    OP_LOGICAL_AND,
+    OP_LOGICAL_OR,
+    OP_BREAK,
+    OP_CONTINUE,
+    OP_CLASS,
+    OP_METHOD,
     OP_BUILD_ARRAY,
     OP_BUILD_MAP
 };
+
 
 struct Chunk {
     std::string name;

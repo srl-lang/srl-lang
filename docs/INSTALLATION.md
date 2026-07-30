@@ -1,4 +1,4 @@
-# SRL Toolchain Installation Guide (v0.3.0)
+# SRL Toolchain Installation Guide (v0.3.1)
 
 This guide covers installing the SRL (Serial Run Language) toolchain across Windows, Linux, and macOS.
 
@@ -52,5 +52,5 @@ srl version
 ```
 Expected Output:
 ```text
-SRL Language Toolchain v0.3.0 (LLVM IR + Self-Hosted Compiler + Bytecode VM + JIT Engine)
+SRL Language Toolchain v0.3.1 (100% Self-Hosted Compiler + Standalone Bundler + Bytecode VM + JIT Engine)
 ```

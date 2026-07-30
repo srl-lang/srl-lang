@@ -1,8 +1,10 @@
 # Build directories
 build/
+build_plugin_test/
 .srlc_build/
 srlc/build/
 bin/
+
 
 # Compiled binaries and object files
 *.exe
@@ -28,4 +30,8 @@ temp_generated.cpp
 
 # Local AI Agent Config & Rules
 .agents/
+
+# Local comparison documentation (ignored by git)
+LANGUAGE_COMPARISON.md
+
 

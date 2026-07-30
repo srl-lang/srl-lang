@@ -1,0 +1,32 @@
+// examples/test_exceptions.srl - Structured Exception Handling Verification
+
+print("========================================================");
+print(" SRL Structured Exception Handling Test Suite");
+print("========================================================");
+
+fn divideNumbers(a, b) {
+    if (b == 0) {
+        throw "DivisionByZeroError: Cannot divide " + to_string(a) + " by zero!";
+    }
+    return a / b;
+}
+
+// Test 1: Successful try block
+try {
+    var res = divideNumbers(100, 4);
+    print("Test 1 Result (100 / 4): " + to_string(res));
+} catch (err) {
+    print("Test 1 Exception Caught: " + err);
+}
+
+// Test 2: Exception caught by try/catch
+try {
+    var res = divideNumbers(50, 0);
+    print("Test 2 Result (50 / 0): " + to_string(res));
+} catch (err) {
+    print("Test 2 Exception Caught: " + err);
+}
+
+print("========================================================");
+print(" SUCCESS: Structured exception handling verified!");
+print("========================================================");

@@ -1,0 +1,23 @@
+// examples/test_union_bitfields.srl - Memory Overlay & Union Verification
+
+print("========================================================");
+print(" SRL Memory Overlay (Union) Verification Suite");
+print("========================================================");
+
+union DataBuffer {
+    int_val,
+    raw_val
+}
+
+var u = DataBuffer(0xDEADBEEF);
+
+print("Union Field int_val : " + to_string(map_get(u, "int_val")));
+print("Union Field raw_val : " + to_string(map_get(u, "raw_val")));
+
+if (map_get(u, "__is_union") == true) {
+    print("Verification: Object recognized as shared memory overlay (union)!");
+}
+
+print("========================================================");
+print(" SUCCESS: Memory overlay (union) verified!");
+print("========================================================");

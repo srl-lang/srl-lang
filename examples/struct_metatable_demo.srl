@@ -1,24 +1,24 @@
 // =======================================================
-// SRL (Serial Run Language) - C++ Struct & Lua Metatable
+// SRL (Serial Run Language) - Native Struct & Metatable
 // =======================================================
 
 print("---------------------------------------");
 print("  SRL Phase 2: Struct & Metatable Demo ");
 print("---------------------------------------");
 
-// 1. C++ Style Struct Declaration
+// 1. Native Struct Declaration
 struct Vector2 { x, y }
 struct Point3D { x, y, z }
 
-print("1. Creating Struct Instances (C++ Style)...");
+print("1. Creating Struct Instances (Native Struct)...");
 var v1 = Vector2(10, 20);
 var v2 = Vector2(5, 15);
 
 print("v1.x = " + to_string(map_get(v1, "x")) + ", v1.y = " + to_string(map_get(v1, "y")));
 print("v2.x = " + to_string(map_get(v2, "x")) + ", v2.y = " + to_string(map_get(v2, "y")));
 
-// 2. Lua Style Prototype & Metatable
-print("2. Testing Lua Style Metatable Fallback (__index)...");
+// 2. Prototype & Metatable Fallback
+print("2. Testing Metatable Fallback (__index)...");
 var BaseProto = map_new();
 map_set(BaseProto, "tag", "SRL_OBJECT_PROTOTYPE");
 map_set(BaseProto, "version", "2.0");

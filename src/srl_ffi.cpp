@@ -3,6 +3,7 @@
 #define NOMINMAX
 #endif
 #include "srl_ffi.hpp"
+#include "srl_plugin_sdk.h"
 #include "vm.hpp"
 #include <iostream>
 #include <vector>
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdint>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,10 +21,167 @@
 
 namespace srl {
 
+// Maps numeric handle -> raw DLL/SO handle
 static std::unordered_map<double, void*> loadedLibraries;
 static double handleCounter = 1.0;
 
-typedef bool (*ModuleInitFn)(void* vm_ptr);
+// Maps plugin path -> human readable name (for srl_list_plugins)
+static std::unordered_map<std::string, std::string> loadedPluginNames;
+
+typedef bool      (*ModuleInitFn_v1)(void* vm_ptr);
+typedef bool      (*ModuleInitFn_v2)(SRL_PluginCtx* ctx);
+
+// ---------------------------------------------------------------------------
+// C ABI bridge functions exposed to plugins via SRL_PluginCtx
+// ---------------------------------------------------------------------------
+
+static void bridge_define_native_impl(void* vm_ptr, const char* name, SRL_NativeFn fn) {
+    if (!vm_ptr || !name || !fn) return;
+    VM* vm = static_cast<VM*>(vm_ptr);
+    static_assert(sizeof(Value) == sizeof(SRL_Value), "SRL_Value size MUST match sizeof(srl::Value) exactly!");
+
+    NativeFn wrapper = [fn](int argc, const Value* args) -> Value {
+        SRL_Value outStorage{};
+
+        fn(argc, reinterpret_cast<const SRL_Value*>(args), &outStorage);
+        Value* vPtr = reinterpret_cast<Value*>(&outStorage);
+        Value ret = std::move(*vPtr);
+        vPtr->~Value();
+        return ret;
+    };
+
+    vm->defineNative(name, wrapper);
+}
+
+static void bridge_make_nil(SRL_Value* out) {
+    if (!out) return;
+    ::new (out) Value();
+}
+static void bridge_make_bool(bool b, SRL_Value* out) {
+    if (!out) return;
+    ::new (out) Value(b);
+}
+static void bridge_make_number(double n, SRL_Value* out) {
+    if (!out) return;
+    ::new (out) Value(n);
+}
+static void bridge_make_string(const char* s, SRL_Value* out) {
+    if (!out) return;
+    ::new (out) Value(std::string(s ? s : ""));
+}
+
+
+static int bridge_value_type(const SRL_Value* sv) {
+    const Value* v = reinterpret_cast<const Value*>(sv);
+    return static_cast<int>(v->type);
+}
+static bool bridge_value_bool(const SRL_Value* sv) {
+    const Value* v = reinterpret_cast<const Value*>(sv);
+    return v->asBool();
+}
+static double bridge_value_number(const SRL_Value* sv) {
+    const Value* v = reinterpret_cast<const Value*>(sv);
+    return v->asNumber();
+}
+static const char* bridge_value_string(const SRL_Value* sv) {
+    const Value* v = reinterpret_cast<const Value*>(sv);
+    return v->asString().c_str();
+}
+
+static SRL_PluginCtx buildPluginCtx(VM& vm) {
+    SRL_PluginCtx ctx{};
+    ctx.sdk_version      = SRL_PLUGIN_SDK_VERSION;
+    ctx.vm               = static_cast<void*>(&vm);
+    ctx.define_native    = bridge_define_native_impl;
+    ctx.make_nil         = bridge_make_nil;
+    ctx.make_bool        = bridge_make_bool;
+    ctx.make_number      = bridge_make_number;
+    ctx.make_string      = bridge_make_string;
+    ctx.value_type       = bridge_value_type;
+    ctx.value_as_bool    = bridge_value_bool;
+    ctx.value_as_number  = bridge_value_number;
+    ctx.value_as_string  = bridge_value_string;
+    return ctx;
+}
+
+// Global heap storage for plugin contexts to keep pointers valid for VM lifetime
+static std::vector<std::unique_ptr<SRL_PluginCtx>> g_pluginContexts;
+
+// ---------------------------------------------------------------------------
+// Shared helper: load a plugin DLL, call v2 init then v1 fallback
+// ---------------------------------------------------------------------------
+bool FFI::loadPlugin(VM& vm, const std::string& path, const std::string& displayName) {
+    // Already loaded?
+    if (loadedPluginNames.count(path)) {
+        return true;
+    }
+
+    void* handle = nullptr;
+#ifdef _WIN32
+    handle = static_cast<void*>(LoadLibraryA(path.c_str()));
+#else
+    handle = dlopen(path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+#endif
+    if (!handle) {
+        std::cerr << "[Plugin] Failed to load: " << path << std::endl;
+        return false;
+    }
+
+    // Try v2 entry point first
+    ModuleInitFn_v2 initV2 = nullptr;
+#ifdef _WIN32
+    initV2 = reinterpret_cast<ModuleInitFn_v2>(GetProcAddress(static_cast<HMODULE>(handle), "srl_module_init_v2"));
+#else
+    initV2 = reinterpret_cast<ModuleInitFn_v2>(dlsym(handle, "srl_module_init_v2"));
+#endif
+
+    bool ok = false;
+    if (initV2) {
+        auto ctxPtr = std::make_unique<SRL_PluginCtx>(buildPluginCtx(vm));
+        ok = initV2(ctxPtr.get());
+        if (ok) {
+            g_pluginContexts.push_back(std::move(ctxPtr));
+        }
+    } else {
+
+        // Fallback: v1 bare void* entry
+        ModuleInitFn_v1 initV1 = nullptr;
+#ifdef _WIN32
+        initV1 = reinterpret_cast<ModuleInitFn_v1>(GetProcAddress(static_cast<HMODULE>(handle), "srl_module_init"));
+        if (!initV1)
+            initV1 = reinterpret_cast<ModuleInitFn_v1>(GetProcAddress(static_cast<HMODULE>(handle), "srl_plugin_init"));
+#else
+        initV1 = reinterpret_cast<ModuleInitFn_v1>(dlsym(handle, "srl_module_init"));
+        if (!initV1)
+            initV1 = reinterpret_cast<ModuleInitFn_v1>(dlsym(handle, "srl_plugin_init"));
+#endif
+        if (!initV1) {
+            std::cerr << "[Plugin] No srl_module_init / srl_module_init_v2 found in: " << path << std::endl;
+#ifdef _WIN32
+            FreeLibrary(static_cast<HMODULE>(handle));
+#else
+            dlclose(handle);
+#endif
+            return false;
+        }
+        ok = initV1(static_cast<void*>(&vm));
+    }
+
+    if (ok) {
+        double id = handleCounter++;
+        loadedLibraries[id] = handle;
+        loadedPluginNames[path] = displayName.empty() ? path : displayName;
+        std::cout << "[Plugin] Loaded: " << (displayName.empty() ? path : displayName) << std::endl;
+    } else {
+        std::cerr << "[Plugin] srl_module_init returned false for: " << path << std::endl;
+#ifdef _WIN32
+        FreeLibrary(static_cast<HMODULE>(handle));
+#else
+        dlclose(handle);
+#endif
+    }
+    return ok;
+}
 
 void FFI::registerNativeFunctions(VM& vm) {
     // ---------------------------------------------------------
@@ -315,46 +474,48 @@ void FFI::registerNativeFunctions(VM& vm) {
     });
 
     // ---------------------------------------------------------
-    // import_native(dll_path) -> bool (Native C++ Extension Loader)
+    // import_native(dll_path [, display_name]) -> bool
+    // Loads a plugin DLL. Supports both v1 (void* vm) and v2 (SRL_PluginCtx*) ABI.
     // ---------------------------------------------------------
     vm.defineNative("import_native", [&vm](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
             std::string path = args[0].asString();
-            void* handle = nullptr;
-#ifdef _WIN32
-            handle = static_cast<void*>(LoadLibraryA(path.c_str()));
-#else
-            handle = dlopen(path.c_str(), RTLD_LAZY);
-#endif
-            if (!handle) {
-                std::cerr << "[Native Plugin Error] Failed to load dynamic plugin module: " << path << std::endl;
-                return Value(false);
-            }
+            std::string name = (argCount > 1 && args[1].isString()) ? args[1].asString() : "";
+            return Value(FFI::loadPlugin(vm, path, name));
+        }
+        return Value(false);
+    });
 
-            ModuleInitFn initFn = nullptr;
-#ifdef _WIN32
-            initFn = reinterpret_cast<ModuleInitFn>(GetProcAddress(static_cast<HMODULE>(handle), "srl_module_init"));
-            if (!initFn) {
-                initFn = reinterpret_cast<ModuleInitFn>(GetProcAddress(static_cast<HMODULE>(handle), "srl_plugin_init"));
-            }
-#else
-            initFn = reinterpret_cast<ModuleInitFn>(dlsym(handle, "srl_module_init"));
-            if (!initFn) {
-                initFn = reinterpret_cast<ModuleInitFn>(dlsym(handle, "srl_plugin_init"));
-            }
-#endif
+    // ---------------------------------------------------------
+    // srl_list_plugins() -> array of strings
+    // Returns an array of display names of all currently loaded plugins.
+    // ---------------------------------------------------------
+    vm.defineNative("srl_list_plugins", [](int argCount, const Value* args) -> Value {
+        auto arr = std::make_shared<std::vector<Value>>();
+        for (const auto& kv : loadedPluginNames) {
+            arr->push_back(Value(kv.second));
+        }
+        return Value(arr);
+    });
 
-            if (!initFn) {
-                std::cerr << "[Native Plugin Error] Symbol 'srl_module_init' not found in: " << path << std::endl;
-                return Value(false);
-            }
+    // ---------------------------------------------------------
+    // srl_plugin_count() -> number
+    // ---------------------------------------------------------
+    vm.defineNative("srl_plugin_count", [](int argCount, const Value* args) -> Value {
+        return Value(static_cast<double>(loadedPluginNames.size()));
+    });
 
-            bool ok = initFn(static_cast<void*>(&vm));
-            if (ok) {
-                double id = handleCounter++;
-                loadedLibraries[id] = handle;
+    // ---------------------------------------------------------
+    // srl_plugin_loaded(name_or_path) -> bool
+    // ---------------------------------------------------------
+    vm.defineNative("srl_plugin_loaded", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            const std::string& query = args[0].asString();
+            for (const auto& kv : loadedPluginNames) {
+                if (kv.first == query || kv.second == query) {
+                    return Value(true);
+                }
             }
-            return Value(ok);
         }
         return Value(false);
     });

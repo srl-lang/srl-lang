@@ -1,0 +1,38 @@
+// std/plugin.srl - SRL Native Plugin Utilities
+//
+// Provides convenience wrappers around the built-in import_native(),
+// srl_list_plugins(), srl_plugin_count(), and srl_plugin_loaded() functions.
+
+fn plugin_require(path, name) {
+    if (srl_plugin_loaded(name)) {
+        return true;
+    }
+    var ok = import_native(path, name);
+    if (!ok) {
+        print("[plugin] Failed to load: " + path);
+    }
+    return ok;
+}
+
+fn plugin_list() {
+    var count = srl_plugin_count();
+    if (count == 0) {
+        print("[plugin] No native plugins currently loaded.");
+        return;
+    }
+    print("[plugin] Loaded native plugins:");
+    var plugins = srl_list_plugins();
+    var i = 0;
+    while (i < arr_len(plugins)) {
+        var item = arr_get(plugins, i);
+        print("  - " + item);
+        i = i + 1;
+    }
+}
+
+fn plugin_assert(name) {
+    if (!srl_plugin_loaded(name)) {
+        print("[plugin] ERROR: Required plugin is not loaded: " + name);
+        exit(1);
+    }
+}

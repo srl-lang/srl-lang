@@ -1,0 +1,100 @@
+// std/compiler/ast.srl - SRL Self-Hosted AST Structure Definitions
+
+class ASTNode {
+    fn init(node_type) {
+        this.type = node_type;
+    }
+}
+
+class ProgramNode {
+    fn init(stmts) {
+        this.type = "PROGRAM";
+        this.statements = stmts;
+    }
+}
+
+class VarDeclNode {
+    fn init(name_tok, type_ann, init_expr, is_const_val) {
+        this.type = "VAR_DECL";
+        this.name = name_tok;
+        this.typeAnnotation = type_ann;
+        this.initializer = init_expr;
+        this.isConst = is_const_val;
+    }
+}
+
+class FunctionDeclNode {
+    fn init(name_tok, param_list, ret_type, body_stmts) {
+        this.type = "FUNCTION_DECL";
+        this.name = name_tok;
+        this.params = param_list;
+        this.returnType = ret_type;
+        this.body = body_stmts;
+    }
+}
+
+class ClassDeclNode {
+    fn init(name_tok, field_list, method_list) {
+        this.type = "CLASS_DECL";
+        this.name = name_tok;
+        this.fields = field_list;
+        this.methods = method_list;
+    }
+}
+
+class LiteralNode {
+    fn init(val) {
+        this.type = "LITERAL";
+        this.value = val;
+    }
+}
+
+class BinaryNode {
+    fn init(left_expr, op_tok, right_expr) {
+        this.type = "BINARY";
+        this.left = left_expr;
+        this.op = op_tok;
+        this.right = right_expr;
+    }
+}
+
+class CallNode {
+    fn init(callee_expr, arg_list) {
+        this.type = "CALL";
+        this.callee = callee_expr;
+        this.args = arg_list;
+    }
+}
+
+class TryCatchNode {
+    fn init(try_stmts, catch_var_tok, catch_stmts) {
+        this.type = "TRY_CATCH";
+        this.tryBody = try_stmts;
+        this.catchVar = catch_var_tok;
+        this.catchBody = catch_stmts;
+    }
+}
+
+class ThrowNode {
+    fn init(expr) {
+        this.type = "THROW";
+        this.expression = expr;
+    }
+}
+
+class UnionDeclNode {
+    fn init(name_tok, field_list) {
+        this.type = "UNION_DECL";
+        this.name = name_tok;
+        this.fields = field_list;
+    }
+}
+
+class GenericDeclNode {
+    fn init(name_tok, type_params, body_node) {
+        this.type = "GENERIC_DECL";
+        this.name = name_tok;
+        this.typeParams = type_params;
+        this.bodyNode = body_node;
+    }
+}

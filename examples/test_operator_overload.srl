@@ -1,0 +1,53 @@
+// examples/test_operator_overload.srl - Custom Operator Overloading Verification
+
+print("========================================================");
+print(" SRL Custom Operator Overloading Test Suite");
+print("========================================================");
+
+class Vector2D {
+    var x;
+    var y;
+
+    fn init(x_val, y_val) {
+        this.x = x_val;
+        this.y = y_val;
+    }
+
+    fn operator+(other) {
+        return Vector2D(this.x + other.x, this.y + other.y);
+    }
+
+    fn operator-(other) {
+        return Vector2D(this.x - other.x, this.y - other.y);
+    }
+
+    fn operator*(scalar) {
+        return Vector2D(this.x * scalar, this.y * scalar);
+    }
+
+    fn toString() {
+        return "Vector2D(" + to_string(this.x) + ", " + to_string(this.y) + ")";
+    }
+}
+
+var v1 = Vector2D(10, 20);
+var v2 = Vector2D(5, 15);
+
+print("v1 = " + v1.toString());
+print("v2 = " + v2.toString());
+
+// Test overloaded operator+
+var sum = v1 + v2;
+print("v1 + v2 -> " + sum.toString());
+
+// Test overloaded operator-
+var diff = v1 - v2;
+print("v1 - v2 -> " + diff.toString());
+
+// Test overloaded operator*
+var scaled = v1 * 3;
+print("v1 * 3  -> " + scaled.toString());
+
+print("========================================================");
+print(" SUCCESS: All custom operator overloads verified!");
+print("========================================================");

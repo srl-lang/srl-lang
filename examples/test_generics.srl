@@ -1,0 +1,37 @@
+// examples/test_generics.srl - Generics Verification Suite
+
+print("========================================================");
+print(" SRL Modern Generics Syntax Test Suite");
+print("========================================================");
+
+// Generic Function
+fn identity<T>(x: T): T {
+    return x;
+}
+
+// Generic Class
+class Container<T> {
+public:
+    var item;
+
+    fn init(val: T) {
+        this.item = val;
+    }
+
+    fn getItem(): T {
+        return this.item;
+    }
+}
+
+var numVal = identity<number>(42);
+print("Generic Identity Number Result: " + to_string(numVal));
+
+var strVal = identity<string>("SRL Language");
+print("Generic Identity String Result: " + strVal);
+
+var c = Container<number>(100);
+print("Generic Container Item: " + to_string(c.getItem()));
+
+print("========================================================");
+print(" SUCCESS: All generic type parameters verified!");
+print("========================================================");

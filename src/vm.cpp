@@ -35,16 +35,62 @@ namespace srl {
 static Value getMetamethod(const Value& val, const std::string& eventName) {
     if (val.isMap()) {
         auto map = val.asMap();
+        auto itEv = map->find(eventName);
+        if (itEv != map->end()) {
+            return itEv->second;
+        }
         auto itMeta = map->find("__metatable");
+        if (itMeta == map->end()) {
+            itMeta = map->find("metatable");
+        }
         if (itMeta != map->end() && itMeta->second.isMap()) {
             auto metaMap = itMeta->second.asMap();
-            auto itEv = metaMap->find(eventName);
-            if (itEv != metaMap->end()) {
-                return itEv->second;
+            auto itEv2 = metaMap->find(eventName);
+            if (itEv2 != metaMap->end()) {
+                return itEv2->second;
             }
         }
     }
     return Value();
+}
+
+bool VM::invokeOperatorMethod(Value instance, const std::string& opMethodName, const std::vector<Value>& args, Value& outResult) {
+    Value mm = getMetamethod(instance, opMethodName);
+    if (mm.isNil()) return false;
+
+    if (mm.isNativeFn()) {
+        std::vector<Value> fullArgs;
+        fullArgs.push_back(instance);
+        fullArgs.insert(fullArgs.end(), args.begin(), args.end());
+        outResult = mm.asNativeFn()(static_cast<int>(fullArgs.size()), fullArgs.data());
+        return true;
+    }
+
+    if (mm.isFunction()) {
+        auto fnObj = mm.asFunction();
+        size_t baseStack = stack_.size();
+        push(mm);        // function
+        push(instance);  // this / arg 0
+        for (const auto& a : args) {
+            push(a);
+        }
+
+        CallFrame frame;
+        frame.function = fnObj;
+        frame.chunk = fnObj->chunk.get();
+        frame.ip = 0;
+        frame.stackOffset = baseStack + 1;
+
+        size_t targetDepth = frames_.size();
+        frames_.push_back(frame);
+
+        InterpretResult res = run(targetDepth);
+        if (res == InterpretResult::INTERPRET_OK && !stack_.empty()) {
+            outResult = pop();
+            return true;
+        }
+    }
+    return false;
 }
 
 VM::VM() {
@@ -489,6 +535,67 @@ void VM::registerNativeFunctions() {
         return Value(argCount >= 1 && args[0].isArray());
     });
 
+    defineNative("math_floor", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) {
+            return Value(std::floor(args[0].asNumber()));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("floor", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) {
+            return Value(std::floor(args[0].asNumber()));
+        }
+        return Value(0.0);
+    });
+
+    defineNative("str_from_code", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) {
+            char c = static_cast<char>(static_cast<int>(args[0].asNumber()));
+            return Value(std::string(1, c));
+        }
+        return Value("");
+    });
+
+    defineNative("chr", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) {
+            char c = static_cast<char>(static_cast<int>(args[0].asNumber()));
+            return Value(std::string(1, c));
+        }
+        return Value("");
+    });
+
+    defineNative("to_string", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0) return Value(args[0].toString());
+        return Value("");
+    });
+
+    defineNative("typeof", [](int argCount, const Value* args) -> Value {
+        if (argCount == 0) return Value("nil");
+        const Value& v = args[0];
+        if (v.isNil()) return Value("nil");
+        if (v.isBool()) return Value("boolean");
+        if (v.isNumber()) return Value("number");
+        if (v.isString()) return Value("string");
+        if (v.isArray()) return Value("array");
+        if (v.isMap()) return Value("map");
+        if (v.isFunction() || v.isNativeFn()) return Value("function");
+        return Value("object");
+    });
+
+    defineNative("type_of", [](int argCount, const Value* args) -> Value {
+        if (argCount == 0) return Value("nil");
+        const Value& v = args[0];
+        if (v.isNil()) return Value("nil");
+        if (v.isBool()) return Value("boolean");
+        if (v.isNumber()) return Value("number");
+        if (v.isString()) return Value("string");
+        if (v.isArray()) return Value("array");
+        if (v.isMap()) return Value("map");
+        if (v.isFunction() || v.isNativeFn()) return Value("function");
+        return Value("object");
+    });
+
     // --- Metatable Operations ---
     defineNative("setmetatable", [](int argCount, const Value* args) -> Value {
         if (argCount >= 2 && args[0].isMap() && args[1].isMap()) {
@@ -676,7 +783,7 @@ void VM::registerNativeFunctions() {
     // --- File & Directory Operations ---
     defineNative("file_read", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
-            std::ifstream file(args[0].asString());
+            std::ifstream file(args[0].asString(), std::ios::binary);
             if (file.is_open()) {
                 std::stringstream buffer;
                 buffer << file.rdbuf();
@@ -686,12 +793,30 @@ void VM::registerNativeFunctions() {
         return Value();
     });
 
+    defineNative("file_exists", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isString()) {
+            std::ifstream f(args[0].asString());
+            return Value(f.good());
+        }
+        return Value(false);
+    });
+
     defineNative("file_write", [](int argCount, const Value* args) -> Value {
         if (argCount >= 2 && args[0].isString() && args[1].isString()) {
-            std::ofstream file(args[0].asString());
-            if (file.is_open()) {
-                file << args[1].asString();
-                return Value(true);
+            std::string path = args[0].asString();
+            std::filesystem::path p(path);
+            std::filesystem::path abs_path = std::filesystem::absolute(p);
+            std::cout << "[native file_write] Target absolute path: " << abs_path.string() << std::endl;
+            FILE* f = fopen(abs_path.string().c_str(), "wb");
+            if (f) {
+                const std::string& data = args[1].asString();
+                size_t written = fwrite(data.data(), 1, data.size(), f);
+                fflush(f);
+                fclose(f);
+                std::cout << "[native file_write] Wrote " << written << " bytes to path: " << abs_path.string() << std::endl;
+                return Value(written == data.size());
+            } else {
+                std::cerr << "[native file_write ERROR] Failed to fopen path: " << abs_path.string() << std::endl;
             }
         }
         return Value(false);
@@ -1038,12 +1163,17 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_ADD: {
                 Value b = pop();
                 Value a = pop();
+                Value res;
                 if (a.isString() || b.isString()) {
                     push(Value(a.asString() + b.asString()));
                 } else if (a.isNumber() && b.isNumber()) {
                     push(Value(a.asNumber() + b.asNumber()));
+                } else if (invokeOperatorMethod(a, "__add", {b}, res)) {
+                    push(res);
+                } else if (invokeOperatorMethod(b, "__add", {a}, res)) {
+                    push(res);
                 } else {
-                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '+' operands must be numbers or strings." << std::endl;
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '+' operands must be numbers, strings, or implement operator+." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
                 break;
@@ -1052,37 +1182,49 @@ InterpretResult VM::run(size_t targetFrameDepth) {
             case OpCode::OP_SUBTRACT: {
                 Value b = pop();
                 Value a = pop();
-                if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '-' operands must be numbers." << std::endl;
+                Value res;
+                if (a.isNumber() && b.isNumber()) {
+                    push(Value(a.asNumber() - b.asNumber()));
+                } else if (invokeOperatorMethod(a, "__sub", {b}, res)) {
+                    push(res);
+                } else {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '-' operands must be numbers or implement operator-." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
-                push(Value(a.asNumber() - b.asNumber()));
                 break;
             }
 
             case OpCode::OP_MULTIPLY: {
                 Value b = pop();
                 Value a = pop();
-                if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '*' operands must be numbers." << std::endl;
+                Value res;
+                if (a.isNumber() && b.isNumber()) {
+                    push(Value(a.asNumber() * b.asNumber()));
+                } else if (invokeOperatorMethod(a, "__mul", {b}, res)) {
+                    push(res);
+                } else {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '*' operands must be numbers or implement operator*." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
-                push(Value(a.asNumber() * b.asNumber()));
                 break;
             }
 
             case OpCode::OP_DIVIDE: {
                 Value b = pop();
                 Value a = pop();
-                if (!a.isNumber() || !b.isNumber()) {
-                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '/' operands must be numbers." << std::endl;
+                Value res;
+                if (a.isNumber() && b.isNumber()) {
+                    if (b.asNumber() == 0) {
+                        std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Division by zero." << std::endl;
+                        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                    }
+                    push(Value(a.asNumber() / b.asNumber()));
+                } else if (invokeOperatorMethod(a, "__div", {b}, res)) {
+                    push(res);
+                } else {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '/' operands must be numbers or implement operator/." << std::endl;
                     return InterpretResult::INTERPRET_RUNTIME_ERROR;
                 }
-                if (b.asNumber() == 0) {
-                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Division by zero." << std::endl;
-                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
-                }
-                push(Value(a.asNumber() / b.asNumber()));
                 break;
             }
 
@@ -1101,6 +1243,92 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 push(Value(std::fmod(a.asNumber(), b.asNumber())));
                 break;
             }
+
+            case OpCode::OP_BITWISE_AND: {
+                Value b = pop();
+                Value a = pop();
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '&' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = static_cast<int64_t>(a.asNumber()) & static_cast<int64_t>(b.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
+            case OpCode::OP_BITWISE_OR: {
+                Value b = pop();
+                Value a = pop();
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '|' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = static_cast<int64_t>(a.asNumber()) | static_cast<int64_t>(b.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
+            case OpCode::OP_LOGICAL_AND: {
+                Value b = pop();
+                Value a = pop();
+                push(Value(a.isTruthy() && b.isTruthy()));
+                break;
+            }
+
+            case OpCode::OP_LOGICAL_OR: {
+                Value b = pop();
+                Value a = pop();
+                push(Value(a.isTruthy() || b.isTruthy()));
+                break;
+            }
+
+            case OpCode::OP_BITWISE_XOR: {
+                Value b = pop();
+                Value a = pop();
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '^' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = static_cast<int64_t>(a.asNumber()) ^ static_cast<int64_t>(b.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
+            case OpCode::OP_BITWISE_NOT: {
+                Value a = pop();
+                if (!a.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '~' operand must be a number." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = ~static_cast<int64_t>(a.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
+            case OpCode::OP_BITWISE_SHL: {
+                Value b = pop();
+                Value a = pop();
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '<<' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = static_cast<int64_t>(a.asNumber()) << static_cast<int64_t>(b.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
+            case OpCode::OP_BITWISE_SHR: {
+                Value b = pop();
+                Value a = pop();
+                if (!a.isNumber() || !b.isNumber()) {
+                    std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: '>>' operands must be numbers." << std::endl;
+                    return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                }
+                int64_t res = static_cast<int64_t>(a.asNumber()) >> static_cast<int64_t>(b.asNumber());
+                push(Value(static_cast<double>(res)));
+                break;
+            }
+
 
             case OpCode::OP_NOT: {
                 push(Value(!pop().isTruthy()));
@@ -1203,7 +1431,32 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value obj = pop();
                 if (obj.isMap()) {
                     auto mapPtr = obj.asMap();
-                    auto it = mapPtr->find(fieldVal.asString());
+                    std::string fName = fieldVal.asString();
+
+                    // Check private access control
+                    auto itPriv = mapPtr->find("__private");
+                    if (itPriv != mapPtr->end() && itPriv->second.isArray()) {
+                        auto arr = itPriv->second.asArray();
+                        bool isPriv = false;
+                        for (const auto& elem : *arr) {
+                            if (elem.asString() == fName) { isPriv = true; break; }
+                        }
+                        if (isPriv) {
+                            bool allowed = false;
+                            if (!frames_.empty()) {
+                                size_t off = frames_.back().stackOffset;
+                                if (off < stack_.size() && stack_[off] == obj) {
+                                    allowed = true;
+                                }
+                            }
+                            if (!allowed) {
+                                std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Cannot access private member '" << fName << "' outside class." << std::endl;
+                                return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                            }
+                        }
+                    }
+
+                    auto it = mapPtr->find(fName);
                     if (it != mapPtr->end()) {
                         push(it->second);
                     } else {
@@ -1220,7 +1473,33 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 Value val = pop();
                 Value obj = pop();
                 if (obj.isMap()) {
-                    (*obj.asMap())[fieldVal.asString()] = val;
+                    auto mapPtr = obj.asMap();
+                    std::string fName = fieldVal.asString();
+
+                    // Check private access control
+                    auto itPriv = mapPtr->find("__private");
+                    if (itPriv != mapPtr->end() && itPriv->second.isArray()) {
+                        auto arr = itPriv->second.asArray();
+                        bool isPriv = false;
+                        for (const auto& elem : *arr) {
+                            if (elem.asString() == fName) { isPriv = true; break; }
+                        }
+                        if (isPriv) {
+                            bool allowed = false;
+                            if (!frames_.empty()) {
+                                size_t off = frames_.back().stackOffset;
+                                if (off < stack_.size() && stack_[off] == obj) {
+                                    allowed = true;
+                                }
+                            }
+                            if (!allowed) {
+                                std::cerr << "[Line " << CURRENT_LINE() << "] Runtime Error: Cannot assign private member '" << fName << "' outside class." << std::endl;
+                                return InterpretResult::INTERPRET_RUNTIME_ERROR;
+                            }
+                        }
+                    }
+
+                    (*mapPtr)[fName] = val;
                 }
                 push(val);
                 break;
@@ -1269,38 +1548,7 @@ InterpretResult VM::run(size_t targetFrameDepth) {
                 break;
             }
 
-            case OpCode::OP_BITWISE_AND: {
-                Value b = pop();
-                Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) & static_cast<int64_t>(b.asNumber()))));
-                } else {
-                    push(Value(0.0));
-                }
-                break;
-            }
 
-            case OpCode::OP_BITWISE_OR: {
-                Value b = pop();
-                Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) | static_cast<int64_t>(b.asNumber()))));
-                } else {
-                    push(Value(0.0));
-                }
-                break;
-            }
-
-            case OpCode::OP_BITWISE_XOR: {
-                Value b = pop();
-                Value a = pop();
-                if (a.isNumber() && b.isNumber()) {
-                    push(Value(static_cast<double>(static_cast<int64_t>(a.asNumber()) ^ static_cast<int64_t>(b.asNumber()))));
-                } else {
-                    push(Value(0.0));
-                }
-                break;
-            }
 
             case OpCode::OP_BUILD_ARRAY: {
                 uint8_t count = READ_BYTE();

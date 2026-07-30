@@ -36,9 +36,9 @@ public:
     InterpretResult interpret(const std::string& source);
     InterpretResult interpretFile(const std::string& filepath);
     InterpretResult runFunction(const std::string& fnName);
-
     void defineNative(const std::string& name, NativeFn fn);
     Environment& getEnvironment() { return env_; }
+    bool invokeOperatorMethod(Value instance, const std::string& opMethodName, const std::vector<Value>& args, Value& outResult);
 
 private:
     Environment env_;

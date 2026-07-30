@@ -1,0 +1,51 @@
+// std/sys.srl - Low-Level System & OS Abstractions for SRL
+import("std/c.srl");
+
+class SystemAPI {
+    fn is_windows() {
+        return file_exists("C:\\Windows\\System32\\kernel32.dll");
+    }
+
+    fn get_process_id() {
+        if (this.is_windows()) {
+            var k32 = c_open("kernel32.dll");
+            if (k32 != 0) {
+                var pid = c_call(k32, "GetCurrentProcessId", "uint32");
+                c_close(k32);
+                return pid;
+            }
+        }
+        return 0;
+    }
+
+    fn sleep_ms(milliseconds) {
+        if (this.is_windows()) {
+            var k32 = c_open("kernel32.dll");
+            if (k32 != 0) {
+                c_call1(k32, "Sleep", "void", milliseconds);
+                c_close(k32);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn get_system_time() {
+        return time_now();
+    }
+}
+
+fn sys_is_windows() {
+    var sys = SystemAPI();
+    return sys.is_windows();
+}
+
+fn sys_pid() {
+    var sys = SystemAPI();
+    return sys.get_process_id();
+}
+
+fn sys_sleep(ms) {
+    var sys = SystemAPI();
+    return sys.sleep_ms(ms);
+}

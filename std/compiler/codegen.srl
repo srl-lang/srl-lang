@@ -1,0 +1,49 @@
+// std/compiler/codegen.srl - Standalone Executable & Code Emitter Module
+
+import("std/compiler/ast.srl");
+
+class CodeGenerator {
+    fn init() {
+        this.outputBuffer = "";
+    }
+
+    fn emit(line) {
+        this.outputBuffer = this.outputBuffer + line + "\n";
+    }
+
+    fn generate(programNode) {
+        this.emit("// Generated Standalone Executable by Self-Hosted SRL Compiler (srlc)");
+        this.emit("");
+
+        var i = 0;
+        var len = arr_len(programNode.statements);
+        while (i < len) {
+            var stmt = arr_get(programNode.statements, i);
+            this.generateStmt(stmt);
+            i = i + 1;
+        }
+
+        return this.outputBuffer;
+    }
+
+    fn generateStmt(stmt) {
+        if (stmt.type == "VAR_DECL") {
+            this.emit("var " + stmt.name.lexeme + " = " + to_string(stmt.initializer.value) + ";");
+        } else if (stmt.type == "FUNCTION_DECL") {
+            this.emit("fn " + stmt.name.lexeme + "() {");
+            this.emit("}");
+        } else if (stmt.type == "TRY_CATCH") {
+            this.emit("try {");
+            this.emit("} catch (" + stmt.catchVar.lexeme + ") {");
+            this.emit("}");
+        } else if (stmt.type == "THROW") {
+            this.emit("throw " + to_string(stmt.expression.value) + ";");
+        } else if (stmt.type == "UNION_DECL") {
+            this.emit("union " + stmt.name.lexeme + " {");
+            this.emit("}");
+        } else if (stmt.type == "GENERIC_DECL") {
+            this.emit("class " + stmt.name.lexeme + "<T> {");
+            this.emit("}");
+        }
+    }
+}

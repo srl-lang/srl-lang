@@ -1,23 +1,28 @@
 # SRL (Serial Run Language) - Formal EBNF Grammar Specification
 
-This document defines the normative **Extended Backus-Naur Form (EBNF)** syntax grammar for SRL v0.3.0. Compiler implementers, parser developers, and IDE tooling authors should use this grammar as the authoritative source for syntax validation.
+This document defines the normative **Extended Backus-Naur Form (EBNF)** syntax grammar for SRL v0.3.1. Compiler implementers, parser developers, and IDE tooling authors should use this grammar as the authoritative source for syntax validation.
 
 ```ebnf
 (* ============================================================================ *)
-(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.3.0)               *)
+(* SRL (Serial Run Language) Formal EBNF Syntax Grammar (v0.3.1)               *)
 (* ============================================================================ *)
 
 Program         ::= { Statement } ;
 
 Statement       ::= VarDecl
                   | FnDecl
+                  | ClassDecl
                   | StructDecl
+                  | UnionDecl
+                  | TryCatchStmt
+                  | ThrowStmt
                   | InterfaceDecl
                   | EnumDecl
                   | IfStmt
                   | WhileStmt
                   | ForStmt
                   | ReturnStmt
+
                   | TryCatchStmt
                   | MatchStmt
                   | ImportStmt

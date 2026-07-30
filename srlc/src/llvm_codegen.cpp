@@ -160,7 +160,7 @@ void LLVMCodegen::emitStmt(const srl::Stmt* stmt) {
             auto fnStmt = static_cast<const srl::FunctionStmt*>(stmt);
             out_ << "define %struct.Value* @" << fnStmt->name.lexeme << "(";
             for (size_t i = 0; i < fnStmt->params.size(); ++i) {
-                out_ << "%struct.Value* %" << fnStmt->params[i].lexeme;
+                out_ << "%struct.Value* %" << fnStmt->params[i].name.lexeme;
                 if (i + 1 < fnStmt->params.size()) out_ << ", ";
             }
             out_ << ") {\n";

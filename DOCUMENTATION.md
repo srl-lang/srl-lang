@@ -1,7 +1,7 @@
 # SRL (Serial Run Language) - Comprehensive Language Specification & Architecture Manual
 
-**Version:** `v0.3.0`  
-**Architecture:** C++ Bytecode Virtual Machine (VM) & LLVM IR Ahead-of-Time (AOT) Standalone Compiler (`srlc`)  
+**Version:** `v0.3.1`  
+**Architecture:** High-Performance Bytecode Virtual Machine (VM), 100% Self-Hosted Compiler (`srlc`), & LLVM IR Standalone Compiler  
 **License:** GNU General Public License v3.0 (GPLv3)
 
 ---
@@ -11,34 +11,37 @@
 2. [Basic Syntax & Data Types](#2-basic-syntax--data-types)
 3. [Control Flow, Loops & Pattern Matching](#3-control-flow-loops--pattern-matching)
 4. [Functions & Scope](#4-functions--scope)
-5. [Arrays & Maps](#5-arrays--maps)
-6. [Structs & Dot-Access Syntax](#6-structs--dot-access-syntax)
-7. [Lua-Style Metatables & Metamethods](#7-lua-style-metatables--metamethods)
-8. [Digital Signal Processing (DSP) & FFT Engine](#8-digital-signal-processing-dsp--fft-engine)
-9. [Terminal User Interface (TUI Module)](#9-terminal-user-interface-tui-module)
-10. [Live Zero-Downtime Hot-Reloading](#10-live-zero-downtime-hot-reloading)
-11. [Standalone LLVM Machine Code Compiler (`srlc`)](#11-standalone-llvm-machine-code-compiler-srlc)
-12. [CLI Tooling Command Reference](#12-cli-tooling-command-reference)
-13. [Extended Standard Libraries & Audio Engine](#13-extended-standard-libraries--audio-engine)
-14. [C++ System-Level Capabilities (FFI, GFX, NET, SYS, Threads)](#14-c-system-level-capabilities-ffi-gfx-net-sys-threads)
-15. [Core Libraries (JSON, Database, Cryptography & GUI Widgets)](#15-core-libraries-json-database-cryptography--gui-widgets)
+5. [Classes, Access Controls & Custom Operator Overloading](#5-classes-access-controls--custom-operator-overloading)
+6. [Structured Exception Handling (`try` / `catch` / `throw`)](#6-structured-exception-handling-try--catch--throw)
+7. [Memory Overlays (`union`) & Generic Templates](#7-memory-overlays-union--generic-templates)
+8. [Arrays, Maps & Structs](#8-arrays-maps--structs)
+9. [Prototype Metatables & Metamethods](#9-prototype-metatables--metamethods)
+10. [Digital Signal Processing (DSP) & FFT Engine](#10-digital-signal-processing-dsp--fft-engine)
+11. [Terminal User Interface (TUI Module)](#11-terminal-user-interface-tui-module)
+12. [Live Zero-Downtime Hot-Reloading](#12-live-zero-downtime-hot-reloading)
+13. [100% Self-Hosted Compiler (`srlc`) & LLVM IR Generation](#13-100-self-hosted-compiler-srlc--llvm-ir-generation)
+14. [CLI Tooling Command Reference](#14-cli-tooling-command-reference)
+15. [Extended Standard Libraries & Native OS FFI (SYS, NET, Thread)](#15-extended-standard-libraries--native-os-ffi-sys-net-thread)
+16. [Core Libraries (JSON, Database, Cryptography & GUI Widgets)](#16-core-libraries-json-database-cryptography--gui-widgets)
+17. [Dynamic Native Plugin System & C ABI SDK](#17-dynamic-native-plugin-system--c-abi-sdk)
 
 ---
 
 ## 1. Introduction & Language Philosophy
 
-**SRL (Serial Run Language)** combines the simplicity and low-level performance of C with the flexible object model of Lua. It is a hybrid programming language specifically designed for **real-time signal processing (DSP)**, **audio synthesis**, **live code modification (hot-reloading)**, and **native standalone executable** generation.
+**SRL (Serial Run Language)** is a hybrid programming language specifically designed for **real-time signal processing (DSP)**, **audio synthesis**, **live code modification (hot-reloading)**, **100% self-hosted native compilation**, and **standalone executable** generation.
 
 ### Key Design Principles:
+- **100% Self-Hosted Architecture:** Bootstrapped compiler engine written entirely in SRL (`compiler/srlc.srl`).
 - **Zero-Downtime Hot-Reloading:** Modify `.srl` source code live without stopping application state or resetting global variables.
-- **Hardware Signal Performance:** Built-in Cooley-Tukey Radix-2 FFT algorithms, filters, and oscillators running at native C++ speed.
-- **Dual Execution Engine:** Execute instantly using the fast C++ Bytecode VM or compile directly to LLVM IR and standalone x86_64 binaries with `srlc`.
+- **Hardware Signal Performance:** Built-in Cooley-Tukey Radix-2 FFT algorithms, filters, and oscillators running at native hardware speed.
+- **Dual Execution Engine:** Execute instantly using the fast Bytecode VM or compile directly to LLVM IR and standalone x86_64 binaries with `srlc`.
 
 ---
 
 ## 2. Basic Syntax & Data Types
 
-Variables in SRL are dynamically typed and declared using the `var` keyword.
+Variables in SRL are dynamically typed and declared using the `var` keyword or immutable `const`.
 
 ### Supported Data Types:
 - `NUMBER`: 64-bit double-precision floating-point number (IEEE-754).
@@ -52,11 +55,12 @@ Variables in SRL are dynamically typed and declared using the `var` keyword.
 ```srl
 // Variable Declarations
 var audio_freq = 440;            // Number
+const MAX_BUFFER = 4096;         // Const Immutability
 var channel_name = "Left";       // String
 var is_active = true;            // Bool
 var empty_val = nil;             // Nil
 
-// String Interpolation (v0.3.0)
+// String Interpolation
 var message = "${channel_name} -> Frequency: ${audio_freq} Hz";
 print(message);
 ```
@@ -76,23 +80,7 @@ if amplitude > 0.8 {
 }
 ```
 
-### `while` Loop:
-```srl
-var i = 0;
-while i < 5 {
-    print("Step: ${i}");
-    i = i + 1;
-}
-```
-
-### C-Style `for` Loop:
-```srl
-for (var i = 0; i < 5; i = i + 1) {
-    print("Index: ${i}");
-}
-```
-
-### Foreach `in` Loops (v0.3.0):
+### Foreach `in` Loops:
 ```srl
 // Array iteration
 var items = arr_new();
@@ -106,14 +94,14 @@ for (var item in items) {
 // Map key-value iteration
 var config = map_new();
 map_set(config, "name", "SRL");
-map_set(config, "version", "0.3.0");
+map_set(config, "version", "0.3.1");
 
 for (var key, val in config) {
     print("${key} = ${val}");
 }
 ```
 
-### Pattern Matching `match` Expression (v0.3.0):
+### Pattern Matching `match` Expression:
 ```srl
 var status = 200;
 var response = match (status) {
@@ -142,97 +130,122 @@ print("Magnitude: " + to_string(result));
 
 ---
 
-## 5. Arrays & Maps
+## 5. Classes, Access Controls & Custom Operator Overloading
 
-SRL provides built-in native functions for dynamic arrays and map dictionaries:
+SRL supports full object-oriented programming with explicit encapsulation specifiers (`public:`, `private:`, `protected:`) and custom operator overloading (`fn operator+`, `fn operator-`, `fn operator*`, `fn operator/`, `fn operator[]`, `fn operator()`).
+
+```srl
+class Vector2D {
+    public:
+        var x;
+        var y;
+
+        fn init(x_val, y_val) {
+            this.x = x_val;
+            this.y = y_val;
+        }
+
+        fn operator+(other) {
+            return Vector2D(this.x + other.x, this.y + other.y);
+        }
+
+        fn operator*(scalar) {
+            return Vector2D(this.x * scalar, this.y * scalar);
+        }
+}
+
+var v1 = Vector2D(10, 20);
+var v2 = Vector2D(5, 15);
+var v3 = v1 + v2; // Calls operator+
+print("Vector Sum: (${v3.x}, ${v3.y})");
+```
+
+---
+
+## 6. Structured Exception Handling (`try` / `catch` / `throw`)
+
+SRL includes structured exception handling for robust error recovery:
+
+```srl
+fn safe_divide(a, b) {
+    if b == 0 {
+        throw "DivisionByZeroError: Cannot divide by zero";
+    }
+    return a / b;
+}
+
+try {
+    var val = safe_divide(100, 0);
+} catch (err) {
+    print("Caught Exception: ${err}");
+}
+```
+
+---
+
+## 7. Memory Overlays (`union`) & Generic Templates
+
+### Memory Overlays (`union`):
+Unions allow multiple named fields to share the same underlying memory offset:
+
+```srl
+union ColorOverlay {
+    var int_value;
+    var raw_value;
+}
+
+var col = ColorOverlay();
+col.int_value = 3735928559; // 0xDEADBEEF
+print("Raw Overlay Value: ${col.raw_value}");
+```
+
+### Modern Generic Templates:
+```srl
+class Container<T> {
+    public:
+        var item;
+
+        fn init(val) {
+            this.item = val;
+        }
+}
+
+fn identity<T>(val: T): T {
+    return val;
+}
+
+var num_box = Container<number>(100);
+print("Boxed Item: ${num_box.item}");
+```
+
+---
+
+## 8. Arrays, Maps & Structs
 
 ### Array Functions:
-- `arr_new()`: Creates a new empty array.
-- `arr_push(arr, val)`: Appends an element to the end of the array.
-- `arr_get(arr, index)`: Reads the value at index.
-- `arr_set(arr, index, val)`: Sets the value at index (automatically resizes array if out of bounds).
-- `arr_len(arr)`: Returns the array length.
-
-```srl
-var list = arr_new();
-arr_push(list, 100);
-arr_push(list, 200);
-arr_set(list, 2, 300);
-
-print("Array element [1]: " + to_string(arr_get(list, 1)));
-print("Array length: " + to_string(arr_len(list)));
-```
+- `arr_new()`, `arr_push(arr, val)`, `arr_get(arr, index)`, `arr_set(arr, index, val)`, `arr_len(arr)`
 
 ### Map Functions:
-- `map_new()`: Creates a new map dictionary.
-- `map_set(map, key, val)`: Sets key-value pair.
-- `map_get(map, key)`: Retrieves value by key.
-- `map_has(map, key)`: Checks if key exists (`true`/`false`).
+- `map_new()`, `map_set(map, key, val)`, `map_get(map, key)`, `map_has(map, key)`
 
+### Structs & Dot Access:
 ```srl
-var player = map_new();
-map_set(player, "name", "Alice");
-map_set(player, "score", 1500);
-
-print("Player: " + map_get(player, "name") + " | Score: " + to_string(map_get(player, "score")));
-```
-
----
-
-## 6. Structs & Dot-Access Syntax
-
-Custom data structures are defined using `struct`. SRL v0.2.1 supports natural dot notation (`obj.field`) for reading and writing struct fields:
-
-```srl
-// Struct Declaration
 struct Point2D { x, y }
-struct Vector3D { x, y, z }
-
-// Object Instantiation
 var p1 = Point2D(15, 25);
-var v1 = Vector3D(1.0, 2.5, 9.8);
-
-// Dot-Access (Read and Write)
 p1.x = 100;
-print("P1 X: " + to_string(p1.x) + ", Y: " + to_string(p1.y));
+print("Point X: ${p1.x}, Y: ${p1.y}");
 ```
 
 ---
 
-## 7. Lua-Style Metatables & Metamethods
+## 9. Prototype Metatables & Metamethods
 
 SRL supports metatables for prototype-based inheritance and operator overloading on map objects:
-
-### Metatable Functions:
-- `setmetatable(obj, metatable)`: Binds a metatable to an object.
-- `getmetatable(obj)`: Returns the object's metatable.
-- `rawget(obj, key)`: Directly reads from the object bypassing `__index`.
-- `rawset(obj, key, val)`: Directly sets property.
-
-### Supported Metamethods:
-- `__index`: Prototype lookup fallback when a key is missing on the target object.
-- `__add`, `__sub`, `__mul`, `__div`: Triggered when binary operators are applied to map objects.
-
-```srl
-var Prototype = map_new();
-map_set(Prototype, "type", "AUDIO_OBJECT");
-map_set(Prototype, "sample_rate", 44100);
-
-var meta = map_new();
-map_set(meta, "__index", Prototype);
-
-var audio_obj = map_new();
-map_set(audio_obj, "channel", "Master");
-setmetatable(audio_obj, meta);
-
-print("Object Type: " + map_get(audio_obj, "type")); // Output: AUDIO_OBJECT
-```
+- `setmetatable(obj, metatable)`, `getmetatable(obj)`, `rawget(obj, key)`, `rawset(obj, key, val)`
 
 ---
 
-## 8. Digital Signal Processing (DSP) & FFT Engine
-
-SRL includes a high-performance C++ DSP engine:
+## 10. Digital Signal Processing (DSP) & FFT Engine
 
 | Function | Description |
 | :--- | :--- |
@@ -240,30 +253,19 @@ SRL includes a high-performance C++ DSP engine:
 | `dsp_square(freq, sample_rate, num_samples)` | Generates a square wave signal array. |
 | `dsp_noise(num_samples)` | Generates white noise. |
 | `dsp_hann(num_samples)` | Returns Hann window coefficients. |
-| `dsp_hamming(num_samples)` | Returns Hamming window coefficients. |
-| `dsp_lowpass(signal, cutoff, sample_rate)` | Applies low-pass filter. |
 | `dsp_fft(real_array, [imag_array])` | Computes Cooley-Tukey Radix-2 FFT. Returns `{"real": [...], "imag": [...]}`. |
-| `dsp_ifft(real_array, imag_array)` | Reconstructs signal using Inverse FFT. |
-| `dsp_magnitude(real, imag)` | Computes spectrum magnitude ($|Z| = \sqrt{R^2 + I^2}$). |
 | `dsp_plot(signal, height, title)` | Renders interactive ASCII waveform/spectrum plots in terminal. |
 
 ---
 
-## 9. Terminal User Interface (TUI Module)
+## 11. Terminal User Interface (TUI Module)
 
 Built-in ANSI TUI commands for drawing interactive terminal panels:
-
-- `tui_init()` / `tui_reset()`: Initializes / resets terminal mode.
-- `tui_clear()`: Clears screen.
-- `tui_color(color_name)`: Sets ANSI text color (`red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`).
-- `tui_move(row, col)`: Moves cursor.
-- `tui_box(row, col, width, height, title)`: Draws styled box frame.
-- `tui_progress(row, col, width, percent)`: Renders progress bar.
-- `tui_get_key()`: Non-blocking key press reader.
+- `tui_init()`, `tui_clear()`, `tui_color(name)`, `tui_move(row, col)`, `tui_box(...)`, `tui_progress(...)`
 
 ---
 
-## 10. Live Zero-Downtime Hot-Reloading
+## 12. Live Zero-Downtime Hot-Reloading
 
 Launch applications in watch mode:
 
@@ -271,68 +273,52 @@ Launch applications in watch mode:
 srl watch app.srl
 ```
 
-In watch mode:
-1. When `app.srl` is edited and saved, the SRL runtime detects changes instantly.
-2. Global state and heap variables are preserved while live function logic is patched.
+In watch mode, global heap state is preserved while modified function logic is hot-swapped live.
 
 ---
 
-## 11. Standalone LLVM Machine Code Compiler (`srlc`)
+## 13. 100% Self-Hosted Compiler (`srlc`) & LLVM IR Generation
 
-Compile scripts to standalone, standalone x86_64 binary executables using the self-hosted LLVM compiler:
+The self-hosted compiler engine (`compiler/srlc.srl`) parses source code, constructs AST nodes, and bundles zero-dependency standalone binaries or emits native LLVM IR:
 
 ```bash
-# Build standalone binary
+# Build zero-dependency standalone binary
 srl build app.srl -o app.exe
 
-# Emit LLVM IR
-srlc app.srl --emit-llvm
+# Static analysis and checking
+srl check app.srl
+
+# Format source code
+srl fmt app.srl
 ```
 
 ---
 
-## 12. CLI Tooling Command Reference
+## 14. CLI Tooling Command Reference
 
 | Command | Description |
 | :--- | :--- |
-| `srl run <file.srl>` | Executes script on SRL Bytecode VM. |
-| `srl build <file.srl> [-o app.exe]` | Compiles script to native binary using LLVM. |
-| `srl watch <file.srl>` | Launches script with live zero-downtime hot-reloading. |
-| `srl version` | Displays SRL engine version. |
-| `srl help` | Displays help menu. |
+| `srl run <file.srl>` | Executes script on SRL Bytecode VM |
+| `srl build <file.srl> [-o app.exe]` | Compiles script to zero-dependency standalone binary |
+| `srl new <project_name>` | Scaffolds a new SRL project |
+| `srl init` | Initializes project manifest (`srl.json`) |
+| `srl check <file.srl>` | Performs static analysis and syntax denotation checks |
+| `srl fmt <file.srl>` | Formats SRL source code |
+| `srl clean` | Cleans temporary build artifacts |
+| `srl watch <file.srl>` | Launches script with live zero-downtime hot-reloading |
+| `srl version` | Displays SRL engine version |
 
 ---
 
-## 13. Extended Standard Libraries & Audio Engine
+## 15. Extended Standard Libraries & Native OS FFI (SYS, NET, Thread)
 
-### A. Native Audio Engine (`audio_*`)
-Plays MP3, WAV, and MID audio without external dependencies:
-- `audio_play(filepath)`, `audio_pause()`, `audio_resume()`, `audio_stop()`
-- `audio_set_volume(0..100)`, `audio_get_position()`, `audio_get_length()`
-- `audio_beep(freq, duration_ms)`
-
-### B. Desktop Native GUI Dialogs (`gui_*`)
-- `gui_file_dialog_open(title, filter)`
-- `gui_file_dialog_save(title, filter)`
-- `gui_msgbox(title, message, type)`
-
-### C. Directory & File System (`dir_*` & `file_*`)
-- `dir_list(path)`, `dir_list_ext(path, extension)`, `dir_exists(path)`, `dir_create(path)`
-- `file_write(path, content)`, `file_append(path, content)`, `file_remove(path)`, `file_size(path)`
+- **Platform & OS FFI ([std/sys.srl](file:///c:/Users/emirt/Desktop/CPP/Stl/srl-lang/std/sys.srl)):** `sys_is_windows()`, `sys_pid()`, `sys_sleep(ms)`.
+- **Multi-Threading ([std/thread.srl](file:///c:/Users/emirt/Desktop/CPP/Stl/srl-lang/std/thread.srl)):** `NativeThread` class, `thread_create()`.
+- **Networking ([std/net.srl](file:///c:/Users/emirt/Desktop/CPP/Stl/srl-lang/std/net.srl)):** Object-oriented `SocketClient` (`connect`, `send`, `receive`, `close`).
 
 ---
 
-## 14. C++ System-Level Capabilities (FFI, GFX, NET, SYS, Threads)
-
-- **C/C++ FFI (`ffi_*`):** Dynamic DLL loading (`ffi_load`, `ffi_call`, `ffi_free`).
-- **2D Hardware Graphics (`gfx_*`):** Double-buffered 2D canvas drawing (`gfx_window_create`, `gfx_fill_rect`, `gfx_present`).
-- **Networking (`net_*`):** Socket and HTTP client tools (`net_http_get`, `net_tcp_connect`).
-- **System Utilities (`sys_*`):** Core count, PID, memory metrics, shell execution (`sys_cpu_count`, `sys_memory_usage`, `sys_exec`).
-- **Multithreading (`thread_*`):** Asynchronous worker threads (`thread_create`, `thread_join`).
-
----
-
-## 15. Core Libraries (JSON, Database, Cryptography & GUI Widgets)
+## 16. Core Libraries (JSON, Database, Cryptography & GUI Widgets)
 
 - **JSON Engine (`json_*`):** `json_parse(json_str)`, `json_stringify(value)`.
 - **Key-Value Database (`db_*`):** `db_open`, `db_set`, `db_get`, `db_close`.
@@ -341,4 +327,15 @@ Plays MP3, WAV, and MID audio without external dependencies:
 
 ---
 
-*SRL (Serial Run Language) v0.2.1 - GNU General Public License v3.0*
+## 17. Dynamic Native Plugin System & C ABI SDK
+
+SRL allows extending the runtime with external native dynamic libraries (`.dll` on Windows, `.so` on Linux) without needing to recompile the main executable.
+
+```srl
+import("std/plugin.srl");
+import_native("plugins/my_plugin.dll", "my_plugin");
+```
+
+---
+
+*SRL (Serial Run Language) v0.3.1 - GNU General Public License v3.0*

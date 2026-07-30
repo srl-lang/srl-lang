@@ -109,7 +109,7 @@ void SYS::registerNativeFunctions(VM& vm) {
     vm.defineNative("sys_read_file", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
             std::string path = args[0].asString();
-            std::ifstream file(path);
+            std::ifstream file(path, std::ios::binary);
             if (file.is_open()) {
                 std::stringstream buffer;
                 buffer << file.rdbuf();
@@ -124,7 +124,7 @@ void SYS::registerNativeFunctions(VM& vm) {
         if (argCount >= 2 && args[0].isString() && args[1].isString()) {
             std::string path = args[0].asString();
             std::string content = args[1].asString();
-            std::ofstream file(path);
+            std::ofstream file(path, std::ios::binary);
             if (file.is_open()) {
                 file << content;
                 return Value(true);

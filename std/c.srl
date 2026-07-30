@@ -1,5 +1,5 @@
-/// SRL Standard C & C++ Library Interoperability Wrapper (std/c.srl)
-/// Provides seamless loading, parameter marshalling, and binding of native C/C++ shared libraries.
+/// SRL Standard Native Library Interoperability Wrapper (std/c.srl)
+/// Provides seamless loading, parameter marshalling, and binding of native shared libraries.
 
 fn c_open(lib_path) {
     var handle = ffi_load(lib_path);

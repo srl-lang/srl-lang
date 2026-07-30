@@ -33,7 +33,7 @@ Chunk Compiler::compileFunction(const FunctionStmt* fnStmt) {
 
     beginScope();
     for (const auto& param : fnStmt->params) {
-        declareVariable(param);
+        declareVariable(param.name);
     }
 
     for (const auto& stmt : fnStmt->body) {
@@ -210,7 +210,11 @@ void Compiler::compileStmt(const Stmt* stmt) {
             Token retToken(TokenType::KEYWORD_RETURN, "return", structStmt->name.line, structStmt->name.column);
             bodyStmts.push_back(std::make_unique<ReturnStmt>(retToken, std::make_unique<VariableExpr>(objToken)));
 
-            FunctionStmt ctorStmt(structStmt->name, structStmt->fields, std::move(bodyStmts));
+            std::vector<Param> structParams;
+            for (const auto& field : structStmt->fields) {
+                structParams.emplace_back(field);
+            }
+            FunctionStmt ctorStmt(structStmt->name, structParams, std::move(bodyStmts));
 
             auto prevContext = currentContext_;
             Compiler fnCompiler;
@@ -232,6 +236,77 @@ void Compiler::compileStmt(const Stmt* stmt) {
 
             emitOp(OpCode::OP_DEFINE_GLOBAL, structStmt->name.line);
             emitByte(static_cast<uint8_t>(globalIdx), structStmt->name.line);
+            break;
+        }
+
+        case ASTNodeType::UNION_STMT: {
+            auto unionStmt = static_cast<const UnionStmt*>(stmt);
+
+            std::vector<StmtPtr> bodyStmts;
+            Token objToken(TokenType::IDENTIFIER, "__obj", unionStmt->name.line, unionStmt->name.column);
+            Token mapNewToken(TokenType::IDENTIFIER, "map_new", unionStmt->name.line, unionStmt->name.column);
+            Token parenToken(TokenType::RIGHT_PAREN, ")", unionStmt->name.line, unionStmt->name.column);
+
+            auto callMapNew = std::make_unique<CallExpr>(
+                std::make_unique<VariableExpr>(mapNewToken),
+                parenToken,
+                std::vector<ExprPtr>()
+            );
+            bodyStmts.push_back(std::make_unique<VarStmt>(objToken, std::move(callMapNew)));
+
+            Token mapSetToken(TokenType::IDENTIFIER, "map_set", unionStmt->name.line, unionStmt->name.column);
+            std::vector<ExprPtr> isUnionArgs;
+            isUnionArgs.push_back(std::make_unique<VariableExpr>(objToken));
+            isUnionArgs.push_back(std::make_unique<LiteralExpr>(Value("__is_union")));
+            isUnionArgs.push_back(std::make_unique<LiteralExpr>(Value(true)));
+            bodyStmts.push_back(std::make_unique<ExpressionStmt>(std::make_unique<CallExpr>(std::make_unique<VariableExpr>(mapSetToken), parenToken, std::move(isUnionArgs))));
+
+            // Bind all union fields to initial value
+            for (const auto& field : unionStmt->fields) {
+                std::vector<ExprPtr> args;
+                args.push_back(std::make_unique<VariableExpr>(objToken));
+                args.push_back(std::make_unique<LiteralExpr>(Value(field.lexeme)));
+                if (!unionStmt->fields.empty()) {
+                    args.push_back(std::make_unique<VariableExpr>(unionStmt->fields[0]));
+                } else {
+                    args.push_back(std::make_unique<LiteralExpr>(Value()));
+                }
+
+                auto callMapSet = std::make_unique<CallExpr>(
+                    std::make_unique<VariableExpr>(mapSetToken),
+                    parenToken,
+                    std::move(args)
+                );
+                bodyStmts.push_back(std::make_unique<ExpressionStmt>(std::move(callMapSet)));
+            }
+
+            Token retToken(TokenType::KEYWORD_RETURN, "return", unionStmt->name.line, unionStmt->name.column);
+            bodyStmts.push_back(std::make_unique<ReturnStmt>(retToken, std::make_unique<VariableExpr>(objToken)));
+
+            std::vector<Param> unionParams;
+            if (!unionStmt->fields.empty()) {
+                unionParams.emplace_back(unionStmt->fields[0]);
+            }
+            FunctionStmt ctorStmt(unionStmt->name, unionParams, std::move(bodyStmts));
+
+            Compiler fnCompiler;
+            Chunk fnChunk = fnCompiler.compileFunction(&ctorStmt);
+
+            auto fnObj = std::make_shared<FunctionObject>();
+            fnObj->name = unionStmt->name.lexeme;
+            fnObj->arity = static_cast<int>(unionParams.size());
+            fnObj->chunk = std::make_shared<Chunk>(fnChunk);
+
+            size_t constIdx = currentContext_->chunk.addConstant(Value(fnObj));
+            compiledFunctions_.push_back(fnObj);
+
+            size_t globalIdx = currentContext_->chunk.addConstant(Value(unionStmt->name.lexeme));
+
+            emitOp(OpCode::OP_CONSTANT, unionStmt->name.line);
+            emitByte(static_cast<uint8_t>(constIdx), unionStmt->name.line);
+
+            emitOp(OpCode::OP_DEFINE_GLOBAL, unionStmt->name.line);
+            emitByte(static_cast<uint8_t>(globalIdx), unionStmt->name.line);
             break;
         }
 
@@ -268,16 +343,29 @@ void Compiler::compileStmt(const Stmt* stmt) {
         case ASTNodeType::WHILE_STMT: {
             auto whileStmt = static_cast<const WhileStmt*>(stmt);
             size_t loopStart = currentContext_->chunk.code.size();
-            compileExpr(whileStmt->condition.get());
 
+            // Push loop context
+            loopStack_.push_back({loopStart, {}, {}});
+
+            compileExpr(whileStmt->condition.get());
             size_t exitJump = emitJump(OpCode::OP_JUMP_IF_FALSE, line);
             emitOp(OpCode::OP_POP, line); // Pop condition
 
             compileStmt(whileStmt->body.get());
+
             emitLoop(loopStart, line);
 
             patchJump(exitJump);
             emitOp(OpCode::OP_POP, line); // Pop condition
+
+            // Patch all break jumps -> after loop
+            for (size_t bj : loopStack_.back().breakJumps) {
+                size_t dist = currentContext_->chunk.code.size() - bj - 2;
+                currentContext_->chunk.code[bj]     = (dist >> 8) & 0xff;
+                currentContext_->chunk.code[bj + 1] = dist & 0xff;
+            }
+
+            loopStack_.pop_back();
             break;
         }
 
@@ -289,6 +377,36 @@ void Compiler::compileStmt(const Stmt* stmt) {
                 emitOp(OpCode::OP_NIL, retStmt->keyword.line);
             }
             emitOp(OpCode::OP_RETURN, retStmt->keyword.line);
+            break;
+        }
+
+        case ASTNodeType::BREAK_STMT: {
+            auto brkStmt = static_cast<const BreakStmt*>(stmt);
+            int ln = static_cast<int>(brkStmt->keyword.line);
+            if (loopStack_.empty()) {
+                std::cerr << "[Line " << ln << "] Error: 'break' used outside loop." << std::endl;
+                break;
+            }
+            size_t jumpOffset = emitJump(OpCode::OP_JUMP, ln);
+            loopStack_.back().breakJumps.push_back(jumpOffset);
+            break;
+        }
+
+        case ASTNodeType::CONTINUE_STMT: {
+            auto cntStmt = static_cast<const ContinueStmt*>(stmt);
+            int ln = static_cast<int>(cntStmt->keyword.line);
+            if (loopStack_.empty()) {
+                std::cerr << "[Line " << ln << "] Error: 'continue' used outside loop." << std::endl;
+                break;
+            }
+            // Emit OP_LOOP with dummy operands; we will patch the offset after
+            // the loop body is fully compiled so we know the distance to loopStart.
+            size_t loopStart = loopStack_.back().loopStart;
+            // Compute the backward distance to loopStart from here (+3 for OP_LOOP+2 operands)
+            size_t offset = currentContext_->chunk.code.size() - loopStart + 3;
+            emitOp(OpCode::OP_LOOP, ln);
+            emitByte((offset >> 8) & 0xff, ln);
+            emitByte(offset & 0xff, ln);
             break;
         }
 
@@ -305,6 +423,9 @@ void Compiler::compileStmt(const Stmt* stmt) {
             size_t loopStart = currentContext_->chunk.code.size();
             size_t exitJump = SIZE_MAX;
 
+            // Push loop context
+            loopStack_.push_back({loopStart, {}, {}});
+
             if (forStmt->condition) {
                 compileExpr(forStmt->condition.get());
                 exitJump = emitJump(OpCode::OP_JUMP_IF_FALSE, 0);
@@ -316,6 +437,15 @@ void Compiler::compileStmt(const Stmt* stmt) {
 
             // 4. Increment
             if (forStmt->increment) {
+                // Patch continue jumps here (before increment)
+                size_t incrStart = currentContext_->chunk.code.size();
+                for (size_t cj : loopStack_.back().continueJumps) {
+                    size_t dist = incrStart - cj - 2;
+                    currentContext_->chunk.code[cj]     = (dist >> 8) & 0xff;
+                    currentContext_->chunk.code[cj + 1] = dist & 0xff;
+                }
+                loopStack_.back().continueJumps.clear();
+
                 compileExpr(forStmt->increment.get());
                 emitOp(OpCode::OP_POP, 0); // pop increment result
             }
@@ -328,7 +458,228 @@ void Compiler::compileStmt(const Stmt* stmt) {
                 emitOp(OpCode::OP_POP, 0); // pop condition
             }
 
+            // Patch break jumps -> after loop
+            for (size_t bj : loopStack_.back().breakJumps) {
+                size_t dist = currentContext_->chunk.code.size() - bj - 2;
+                currentContext_->chunk.code[bj]     = (dist >> 8) & 0xff;
+                currentContext_->chunk.code[bj + 1] = dist & 0xff;
+            }
+
+            loopStack_.pop_back();
             endScope(0);
+            break;
+        }
+
+        case ASTNodeType::ENUM_STMT: {
+            auto enumStmt = static_cast<const EnumStmt*>(stmt);
+            int ln = static_cast<int>(enumStmt->name.line);
+
+            // 1. Create a map object for EnumName (e.g. Status)
+            size_t mapFnIdx = currentContext_->chunk.addConstant(Value(std::string("map_new")));
+            emitOp(OpCode::OP_GET_GLOBAL, ln);
+            emitByte(static_cast<uint8_t>(mapFnIdx), ln);
+            emitOp(OpCode::OP_CALL, ln);
+            emitByte(0, ln);
+
+            size_t enumNameIdx = currentContext_->chunk.addConstant(Value(enumStmt->name.lexeme));
+            emitOp(OpCode::OP_DEFINE_CONST, ln);
+            emitByte(static_cast<uint8_t>(enumNameIdx), ln);
+
+            // 2. Populate enum items
+            double autoVal = 0.0;
+            for (const auto& item : enumStmt->items) {
+                int itemLn = static_cast<int>(item.name.line);
+
+                std::string flatName = enumStmt->name.lexeme + "_" + item.name.lexeme;
+                size_t flatIdx = currentContext_->chunk.addConstant(Value(flatName));
+
+                size_t mapSetIdx = currentContext_->chunk.addConstant(Value(std::string("map_set")));
+                emitOp(OpCode::OP_GET_GLOBAL, itemLn);
+                emitByte(static_cast<uint8_t>(mapSetIdx), itemLn);
+
+                emitOp(OpCode::OP_GET_GLOBAL, itemLn);
+                emitByte(static_cast<uint8_t>(enumNameIdx), itemLn);
+
+                size_t keyIdx = currentContext_->chunk.addConstant(Value(item.name.lexeme));
+                emitOp(OpCode::OP_CONSTANT, itemLn);
+                emitByte(static_cast<uint8_t>(keyIdx), itemLn);
+
+                if (item.value) {
+                    compileExpr(item.value.get());
+                } else {
+                    size_t numIdx = currentContext_->chunk.addConstant(Value(autoVal));
+                    emitOp(OpCode::OP_CONSTANT, itemLn);
+                    emitByte(static_cast<uint8_t>(numIdx), itemLn);
+                    autoVal += 1.0;
+                }
+
+                // Also define global constant EnumName_ItemName
+                emitOp(OpCode::OP_DUP, itemLn);
+                emitOp(OpCode::OP_DEFINE_CONST, itemLn);
+                emitByte(static_cast<uint8_t>(flatIdx), itemLn);
+
+                emitOp(OpCode::OP_CALL, itemLn);
+                emitByte(3, itemLn);
+                emitOp(OpCode::OP_POP, itemLn);
+            }
+            break;
+        }
+
+        case ASTNodeType::CLASS_STMT: {
+            auto classStmt = static_cast<const ClassStmt*>(stmt);
+            int ln = static_cast<int>(classStmt->name.line);
+
+            // 1. Compile methods and store as global ClassName_methodName
+            for (const auto& method : classStmt->methods) {
+                std::vector<Param> methodParams;
+                methodParams.emplace_back(Token(TokenType::KEYWORD_THIS, "this", method.name.line, method.name.column));
+                for (const auto& p : method.params) {
+                    methodParams.push_back(p);
+                }
+
+                std::string fullMethodName = classStmt->name.lexeme + "_" + method.name.lexeme;
+                Token fullMethodTok(TokenType::IDENTIFIER, fullMethodName, method.name.line, method.name.column);
+                FunctionStmt fnStmt(fullMethodTok, methodParams, std::move(const_cast<ClassMethod&>(method).body));
+
+
+
+                Compiler fnCompiler;
+                Chunk fnChunk = fnCompiler.compileFunction(&fnStmt);
+
+                auto fnObj = std::make_shared<FunctionObject>();
+                fnObj->name = fullMethodName;
+                fnObj->arity = static_cast<int>(methodParams.size());
+                fnObj->chunk = std::make_shared<Chunk>(fnChunk);
+
+                compiledFunctions_.push_back(fnObj);
+
+                size_t fnObjIdx = currentContext_->chunk.addConstant(Value(fnObj));
+                emitOp(OpCode::OP_CONSTANT, method.name.line);
+                emitByte(static_cast<uint8_t>(fnObjIdx), method.name.line);
+
+                size_t globalIdx = currentContext_->chunk.addConstant(Value(fullMethodName));
+                emitOp(OpCode::OP_DEFINE_GLOBAL, method.name.line);
+                emitByte(static_cast<uint8_t>(globalIdx), method.name.line);
+            }
+
+            // 2. Generate class constructor function ClassName(...)
+            const ClassMethod* initMethod = nullptr;
+            for (const auto& method : classStmt->methods) {
+                if (method.name.lexeme == "init") {
+                    initMethod = &method;
+                    break;
+                }
+            }
+
+            std::vector<Param> ctorParams;
+            if (initMethod) {
+                ctorParams = initMethod->params;
+            }
+
+            Token instTok(TokenType::IDENTIFIER, "inst", ln, 0);
+            Token mapNewTok(TokenType::IDENTIFIER, "map_new", ln, 0);
+            Token mapSetTok(TokenType::IDENTIFIER, "map_set", ln, 0);
+            Token parenTok(TokenType::LEFT_PAREN, "(", ln, 0);
+
+            std::vector<StmtPtr> ctorStmts;
+
+            // var inst = map_new();
+            std::vector<ExprPtr> mnArgs;
+            ExprPtr mapNewCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(mapNewTok), parenTok, std::move(mnArgs));
+            ctorStmts.push_back(std::make_unique<VarStmt>(instTok, std::move(mapNewCall)));
+
+            // bind fields
+            for (const auto& field : classStmt->fields) {
+                std::vector<ExprPtr> msArgs;
+                msArgs.push_back(std::make_unique<VariableExpr>(instTok));
+                msArgs.push_back(std::make_unique<LiteralExpr>(Value(field.lexeme)));
+                msArgs.push_back(std::make_unique<LiteralExpr>(Value()));
+                ExprPtr msCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(mapSetTok), parenTok, std::move(msArgs));
+                ctorStmts.push_back(std::make_unique<ExpressionStmt>(std::move(msCall)));
+            }
+
+            // bind methods
+            for (const auto& method : classStmt->methods) {
+                std::string fullMethodName = classStmt->name.lexeme + "_" + method.name.lexeme;
+                std::vector<ExprPtr> msArgs;
+                msArgs.push_back(std::make_unique<VariableExpr>(instTok));
+                msArgs.push_back(std::make_unique<LiteralExpr>(Value(method.name.lexeme)));
+                msArgs.push_back(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, fullMethodName, ln, 0)));
+                ExprPtr msCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(mapSetTok), parenTok, std::move(msArgs));
+                ctorStmts.push_back(std::make_unique<ExpressionStmt>(std::move(msCall)));
+            }
+
+            std::vector<ExprPtr> privNames;
+            for (const auto& cf : classStmt->classFields) {
+                if (cf.access == AccessModifier::PRIVATE || cf.access == AccessModifier::PROTECTED) {
+                    privNames.push_back(std::make_unique<LiteralExpr>(Value(cf.name.lexeme)));
+                }
+            }
+            for (const auto& method : classStmt->methods) {
+                if (method.access == AccessModifier::PRIVATE || method.access == AccessModifier::PROTECTED) {
+                    privNames.push_back(std::make_unique<LiteralExpr>(Value(method.name.lexeme)));
+                }
+            }
+            if (!privNames.empty()) {
+                Token arrNewTok(TokenType::IDENTIFIER, "arr_new", ln, 0);
+                Token arrPushTok(TokenType::IDENTIFIER, "arr_push", ln, 0);
+                Token privArrTok(TokenType::IDENTIFIER, "priv_arr", ln, 0);
+
+                std::vector<ExprPtr> anArgs;
+                ExprPtr arrNewCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(arrNewTok), parenTok, std::move(anArgs));
+                ctorStmts.push_back(std::make_unique<VarStmt>(privArrTok, std::move(arrNewCall)));
+
+                for (auto& pNameExpr : privNames) {
+                    std::vector<ExprPtr> apArgs;
+                    apArgs.push_back(std::make_unique<VariableExpr>(privArrTok));
+                    apArgs.push_back(std::move(pNameExpr));
+                    ExprPtr apCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(arrPushTok), parenTok, std::move(apArgs));
+                    ctorStmts.push_back(std::make_unique<ExpressionStmt>(std::move(apCall)));
+                }
+
+                std::vector<ExprPtr> msPrivArgs;
+                msPrivArgs.push_back(std::make_unique<VariableExpr>(instTok));
+                msPrivArgs.push_back(std::make_unique<LiteralExpr>(Value("__private")));
+                msPrivArgs.push_back(std::make_unique<VariableExpr>(privArrTok));
+                ExprPtr msPrivCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(mapSetTok), parenTok, std::move(msPrivArgs));
+                ctorStmts.push_back(std::make_unique<ExpressionStmt>(std::move(msPrivCall)));
+            }
+
+            // call init(inst, p1, p2...) if init method exists
+            if (initMethod) {
+                std::string initFnName = classStmt->name.lexeme + "_init";
+                std::vector<ExprPtr> initArgs;
+                initArgs.push_back(std::make_unique<VariableExpr>(instTok));
+                for (const auto& p : initMethod->params) {
+                    initArgs.push_back(std::make_unique<VariableExpr>(p.name));
+                }
+                ExprPtr initCall = std::make_unique<CallExpr>(std::make_unique<VariableExpr>(Token(TokenType::IDENTIFIER, initFnName, ln, 0)), parenTok, std::move(initArgs));
+                ctorStmts.push_back(std::make_unique<ExpressionStmt>(std::move(initCall)));
+            }
+
+            // return inst;
+            ctorStmts.push_back(std::make_unique<ReturnStmt>(Token(TokenType::KEYWORD_RETURN, "return", ln, 0), std::make_unique<VariableExpr>(instTok)));
+
+            FunctionStmt ctorFnStmt(classStmt->name, ctorParams, std::move(ctorStmts));
+
+            Compiler ctorCompiler;
+            Chunk ctorChunk = ctorCompiler.compileFunction(&ctorFnStmt);
+
+            auto ctorObj = std::make_shared<FunctionObject>();
+            ctorObj->name = classStmt->name.lexeme;
+            ctorObj->arity = static_cast<int>(ctorParams.size());
+            ctorObj->chunk = std::make_shared<Chunk>(ctorChunk);
+
+            compiledFunctions_.push_back(ctorObj);
+
+            size_t ctorObjIdx = currentContext_->chunk.addConstant(Value(ctorObj));
+            emitOp(OpCode::OP_CONSTANT, ln);
+            emitByte(static_cast<uint8_t>(ctorObjIdx), ln);
+
+            size_t globalIdx = currentContext_->chunk.addConstant(Value(classStmt->name.lexeme));
+            emitOp(OpCode::OP_DEFINE_GLOBAL, ln);
+            emitByte(static_cast<uint8_t>(globalIdx), ln);
+
             break;
         }
 
@@ -407,6 +758,8 @@ void Compiler::compileExpr(const Expr* expr) {
                 emitOp(OpCode::OP_NEGATE, unary->op.line);
             } else if (unary->op.type == TokenType::BANG) {
                 emitOp(OpCode::OP_NOT, unary->op.line);
+            } else if (unary->op.type == TokenType::TILDE) {
+                emitOp(OpCode::OP_BITWISE_NOT, unary->op.line);
             }
             break;
         }
@@ -422,6 +775,13 @@ void Compiler::compileExpr(const Expr* expr) {
                 case TokenType::STAR: emitOp(OpCode::OP_MULTIPLY, bin->op.line); break;
                 case TokenType::SLASH: emitOp(OpCode::OP_DIVIDE, bin->op.line); break;
                 case TokenType::PERCENT: emitOp(OpCode::OP_MODULO, bin->op.line); break;
+                case TokenType::AMPERSAND: emitOp(OpCode::OP_BITWISE_AND, bin->op.line); break;
+                case TokenType::PIPE: emitOp(OpCode::OP_BITWISE_OR, bin->op.line); break;
+                case TokenType::CARET: emitOp(OpCode::OP_BITWISE_XOR, bin->op.line); break;
+                case TokenType::BIT_LSHIFT: emitOp(OpCode::OP_BITWISE_SHL, bin->op.line); break;
+                case TokenType::BIT_RSHIFT: emitOp(OpCode::OP_BITWISE_SHR, bin->op.line); break;
+                case TokenType::AND: emitOp(OpCode::OP_LOGICAL_AND, bin->op.line); break;
+                case TokenType::OR: emitOp(OpCode::OP_LOGICAL_OR, bin->op.line); break;
                 case TokenType::EQUAL_EQUAL: emitOp(OpCode::OP_EQUAL, bin->op.line); break;
                 case TokenType::BANG_EQUAL:
                     emitOp(OpCode::OP_EQUAL, bin->op.line);
@@ -442,16 +802,29 @@ void Compiler::compileExpr(const Expr* expr) {
             break;
         }
 
+
         case ASTNodeType::CALL_EXPR: {
             auto call = static_cast<const CallExpr*>(expr);
-            compileExpr(call->callee.get());
-            for (const auto& arg : call->arguments) {
-                compileExpr(arg.get());
+            if (call->callee->getType() == ASTNodeType::GET_FIELD_EXPR) {
+                auto getField = static_cast<const GetFieldExpr*>(call->callee.get());
+                compileExpr(call->callee.get());
+                compileExpr(getField->object.get());
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emitOp(OpCode::OP_CALL, call->paren.line);
+                emitByte(static_cast<uint8_t>(call->arguments.size() + 1), call->paren.line);
+            } else {
+                compileExpr(call->callee.get());
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emitOp(OpCode::OP_CALL, call->paren.line);
+                emitByte(static_cast<uint8_t>(call->arguments.size()), call->paren.line);
             }
-            emitOp(OpCode::OP_CALL, call->paren.line);
-            emitByte(static_cast<uint8_t>(call->arguments.size()), call->paren.line);
             break;
         }
+
 
         // obj.field  →  map_get(obj, "field")
         case ASTNodeType::GET_FIELD_EXPR: {
@@ -518,10 +891,7 @@ void Compiler::compileExpr(const Expr* expr) {
                     emitOp(OpCode::OP_EQUAL, 0);
 
                     // Jump if false (if equal fails)
-                    emitOp(OpCode::OP_JUMP_IF_FALSE, 0);
-                    size_t elseJump = currentContext_->chunk.code.size();
-                    emitByte(0xff, 0);
-                    emitByte(0xff, 0);
+                    size_t elseJump = emitJump(OpCode::OP_JUMP_IF_FALSE, 0);
 
                     // If equal succeeds: pop target (leaving result on top)
                     emitOp(OpCode::OP_POP, 0); // pop bool
@@ -529,10 +899,8 @@ void Compiler::compileExpr(const Expr* expr) {
                     compileExpr(c.result.get());
 
                     // Jump to end of match
-                    emitOp(OpCode::OP_JUMP, 0);
-                    endJumps.push_back(currentContext_->chunk.code.size());
-                    emitByte(0xff, 0);
-                    emitByte(0xff, 0);
+                    size_t endJump = emitJump(OpCode::OP_JUMP, 0);
+                    endJumps.push_back(endJump);
 
                     // Patch else jump (when match case fails)
                     patchJump(elseJump);

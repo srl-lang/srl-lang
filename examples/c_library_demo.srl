@@ -1,13 +1,13 @@
 /// ============================================================================
-/// SRL C/C++ Library Interoperability & FFI Demonstration
-/// Demonstrates loading C dynamic libraries (.dll/.so), dynamic function call
+/// SRL Native Library Interoperability & FFI Demonstration
+/// Demonstrates loading native dynamic libraries (.dll/.so), dynamic function call
 /// dispatching, memory allocation, and parameter marshalling.
 /// ============================================================================
 
 import("std/c.srl");
 
 print("========================================================");
-print(" SRL Universal C/C++ Interoperability Demo");
+print(" SRL Universal Native Interoperability Demo");
 print("========================================================");
 
 // 1. Load System C Dynamic Library (Windows: ucrtbase.dll / msvcrt.dll, Linux: libc.so)

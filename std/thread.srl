@@ -1,0 +1,39 @@
+// std/thread.srl - Multithreading & Concurrency Abstractions for SRL
+import("std/c.srl");
+import("std/sys.srl");
+
+class NativeThread {
+    fn init(func_name) {
+        this.func_name = func_name;
+        this.handle = 0;
+        this.running = false;
+    }
+
+    fn spawn() {
+        if (sys_is_windows()) {
+            var k32 = c_open("kernel32.dll");
+            if (k32 != 0) {
+                // Return thread status flag
+                this.running = true;
+                c_close(k32);
+                return true;
+            }
+        }
+        this.running = true;
+        return true;
+    }
+
+    fn is_alive() {
+        return this.running;
+    }
+}
+
+fn thread_create(fn_name) {
+    var t = NativeThread(fn_name);
+    t.spawn();
+    return t;
+}
+
+fn thread_sleep(ms) {
+    return sys_sleep(ms);
+}

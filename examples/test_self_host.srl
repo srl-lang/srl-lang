@@ -1,0 +1,8 @@
+// examples/test_self_host.srl - Test script for Self-Hosted Compiler AST and bundling
+var magic_number = 42;
+
+fn compute() {
+    return magic_number * 2;
+}
+
+print("Self-Hosted Test Script Executed Successfully!");

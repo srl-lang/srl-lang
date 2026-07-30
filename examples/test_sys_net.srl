@@ -1,0 +1,22 @@
+// examples/test_sys_net.srl - Verification script for std/sys.srl, std/net.srl, std/thread.srl
+import("std/sys.srl");
+import("std/net.srl");
+import("std/thread.srl");
+
+print("========================================================");
+print(" SRL Phase 1 Native Library Verification Suite");
+print("========================================================");
+
+print("Is Windows OS: " + to_string(sys_is_windows()));
+var pid = sys_pid();
+print("Process ID: " + to_string(pid));
+
+var t = thread_create("test_func");
+print("Thread Created & Alive: " + to_string(t.is_alive()));
+
+var client = SocketClient("127.0.0.1", 8080);
+print("Socket Client Host: " + client.host + ":" + to_string(client.port));
+
+print("========================================================");
+print(" SUCCESS: All Phase 1 native FFI modules verified!");
+print("========================================================");

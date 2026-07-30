@@ -1,0 +1,20 @@
+// Phase 2: Optional Static Typing Verification Script
+var limit: int = 100;
+var message: string = "SRL Type Annotations Active";
+var is_valid: bool = true;
+
+fn compute(x: int, y: int) -> int {
+    var result: int = x * 2 + y;
+    return result;
+}
+
+fn greet(name: string) -> string {
+    return "Hello, " + name + "!";
+}
+
+print("=== Phase 2 Static Typing Suite ===");
+print("Limit: " + to_string(limit));
+print("Message: " + message);
+print("Computed value: " + to_string(compute(10, 5)));
+print(greet("Developer"));
+print("=== SUCCESS: Static Types Parsed & Executed ===");

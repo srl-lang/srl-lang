@@ -88,6 +88,26 @@ fn codegen_stmt_list(stmts, label_prefix) {
                 ir = ir + codegen_stmt_list(wbody_stmts, label_prefix + "_while_body");
             }
             ir = ir + "  ; --- End While Loop ---\n";
+        } else if type_name == "TRY_CATCH_STMT" {
+            ir = ir + "  ; --- Begin Try-Catch Block ---\n";
+            var try_stmts = map_get(stmt, "try_body");
+            if try_stmts != nil {
+                ir = ir + codegen_stmt_list(try_stmts, label_prefix + "_try");
+            }
+            var catch_stmts = map_get(stmt, "catch_body");
+            if catch_stmts != nil {
+                ir = ir + codegen_stmt_list(catch_stmts, label_prefix + "_catch");
+            }
+            ir = ir + "  ; --- End Try-Catch Block ---\n";
+        } else if type_name == "THROW_STMT" {
+            ir = ir + "  ; --- Exception Throw Statement ---\n";
+            ir = ir + "  call void @exit(i32 1)\n";
+        } else if type_name == "UNION_DECL" {
+            var union_name = map_get(stmt, "name");
+            ir = ir + "  ; union memory overlay declaration: " + union_name + "\n";
+        } else if type_name == "TEMPLATE_DECL" {
+            var tmpl_name = map_get(stmt, "name");
+            ir = ir + "  ; generic template declaration: " + tmpl_name + "\n";
         }
 
         i = i + 1;

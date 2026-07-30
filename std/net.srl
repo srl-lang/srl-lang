@@ -1,15 +1,57 @@
-// SRL Standard Library - Network & HTTP Client Helper (std/net.srl)
+// std/net.srl - SRL Native Network & Socket Library
+import("std/c.srl");
+
+class SocketClient {
+    fn init(host, port) {
+        this.host = host;
+        this.port = port;
+        this.socket_fd = 0;
+        this.connected = false;
+    }
+
+    fn connect() {
+        this.socket_fd = net_tcp_connect(this.host, this.port);
+        if (this.socket_fd > 0) {
+            this.connected = true;
+            return true;
+        }
+        return false;
+    }
+
+    fn send(data) {
+        if (this.connected) {
+            return net_tcp_send(this.socket_fd, data);
+        }
+        return false;
+    }
+
+    fn receive(max_bytes) {
+        if (this.connected) {
+            return net_tcp_recv(this.socket_fd, max_bytes);
+        }
+        return "";
+    }
+
+    fn close() {
+        if (this.connected) {
+            net_tcp_close(this.socket_fd);
+            this.connected = false;
+            return true;
+        }
+        return false;
+    }
+}
 
 fn http_get(url) {
     return net_http_get(url, "/");
 }
 
 fn tcp_connect_and_send(host, port, data) {
-    var sock = net_tcp_connect(host, port);
-    if sock > 0 {
-        net_tcp_send(sock, data);
-        var resp = net_tcp_recv(sock, 4096);
-        net_tcp_close(sock);
+    var client = SocketClient(host, port);
+    if (client.connect()) {
+        client.send(data);
+        var resp = client.receive(4096);
+        client.close();
         return resp;
     }
     return "";

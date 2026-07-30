@@ -7,6 +7,13 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"fn", TokenType::KEYWORD_FN},
     {"var", TokenType::KEYWORD_VAR},
     {"const", TokenType::KEYWORD_CONST},
+    {"enum", TokenType::KEYWORD_ENUM},
+    {"class", TokenType::KEYWORD_CLASS},
+    {"operator", TokenType::KEYWORD_OPERATOR},
+    {"public", TokenType::KEYWORD_PUBLIC},
+    {"private", TokenType::KEYWORD_PRIVATE},
+    {"protected", TokenType::KEYWORD_PROTECTED},
+    {"this", TokenType::KEYWORD_THIS},
     {"match", TokenType::KEYWORD_MATCH},
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
@@ -20,12 +27,17 @@ const std::unordered_map<std::string, TokenType> Lexer::keywords_ = {
     {"false", TokenType::KEYWORD_FALSE},
     {"nil", TokenType::KEYWORD_NIL},
     {"struct", TokenType::KEYWORD_STRUCT},
+    {"union", TokenType::KEYWORD_UNION},
     {"async", TokenType::KEYWORD_ASYNC},
     {"await", TokenType::KEYWORD_AWAIT},
     {"try", TokenType::KEYWORD_TRY},
     {"catch", TokenType::KEYWORD_CATCH},
-    {"throw", TokenType::KEYWORD_THROW}
+    {"throw", TokenType::KEYWORD_THROW},
+    {"defer", TokenType::KEYWORD_DEFER},
+    {"break", TokenType::KEYWORD_BREAK},
+    {"continue", TokenType::KEYWORD_CONTINUE}
 };
+
 
 Lexer::Lexer(std::string source) : source_(std::move(source)) {}
 
@@ -83,6 +95,8 @@ void Lexer::scanToken() {
         case ')': addToken(TokenType::RIGHT_PAREN); break;
         case '{': addToken(TokenType::LEFT_BRACE); break;
         case '}': addToken(TokenType::RIGHT_BRACE); break;
+        case '[': addToken(TokenType::LEFT_BRACKET); break;
+        case ']': addToken(TokenType::RIGHT_BRACKET); break;
         case ',': addToken(TokenType::COMMA); break;
         case ';': addToken(TokenType::SEMICOLON); break;
         case ':': addToken(TokenType::COLON); break;
@@ -111,22 +125,38 @@ void Lexer::scanToken() {
                 addToken(TokenType::EQUAL);
             }
             break;
+        case '^': addToken(TokenType::CARET); break;
+        case '~': addToken(TokenType::TILDE); break;
+
         case '<':
-            addToken(match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
+            if (match('<')) {
+                addToken(TokenType::BIT_LSHIFT);
+            } else if (match('=')) {
+                addToken(TokenType::LESS_EQUAL);
+            } else {
+                addToken(TokenType::LESS);
+            }
             break;
         case '>':
-            addToken(match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+            if (match('>')) {
+                addToken(TokenType::BIT_RSHIFT);
+            } else if (match('=')) {
+                addToken(TokenType::GREATER_EQUAL);
+            } else {
+                addToken(TokenType::GREATER);
+            }
             break;
 
         case '&':
             if (match('&')) addToken(TokenType::AND);
-            else addToken(TokenType::TOKEN_ERROR, "Unexpected token '&'");
+            else addToken(TokenType::AMPERSAND);
             break;
 
         case '|':
             if (match('|')) addToken(TokenType::OR);
-            else addToken(TokenType::TOKEN_ERROR, "Unexpected token '|'");
+            else addToken(TokenType::PIPE);
             break;
+
 
         case '/':
             if (match('/')) {
@@ -234,6 +264,19 @@ void Lexer::string() {
 }
 
 void Lexer::number() {
+    if (source_[start_] == '0' && (peek() == 'x' || peek() == 'X')) {
+        advance(); // consume 'x' / 'X'
+        while (std::isxdigit(peek())) advance();
+        std::string hexStr = source_.substr(start_ + 2, current_ - (start_ + 2));
+        if (!hexStr.empty()) {
+            try {
+                unsigned long long val = std::stoull(hexStr, nullptr, 16);
+                addToken(TokenType::NUMBER, std::to_string(static_cast<double>(val)));
+                return;
+            } catch (...) {}
+        }
+    }
+
     while (std::isdigit(peek())) advance();
 
     // Look for fractional part
@@ -244,6 +287,7 @@ void Lexer::number() {
 
     addToken(TokenType::NUMBER, source_.substr(start_, current_ - start_));
 }
+
 
 void Lexer::identifier() {
     while (std::isalnum(peek()) || peek() == '_') advance();

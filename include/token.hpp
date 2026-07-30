@@ -10,6 +10,7 @@ enum class TokenType {
     // Single-character tokens
     LEFT_PAREN, RIGHT_PAREN,
     LEFT_BRACE, RIGHT_BRACE,
+    LEFT_BRACKET, RIGHT_BRACKET,
     COMMA, SEMICOLON, COLON, DOT,
     PLUS, MINUS, STAR, SLASH, PERCENT,
 
@@ -25,10 +26,20 @@ enum class TokenType {
     // Literals
     IDENTIFIER, STRING, NUMBER,
 
+    // Bitwise operators & keywords
+    AMPERSAND, PIPE, CARET, TILDE, BIT_LSHIFT, BIT_RSHIFT,
+
     // Keywords
     KEYWORD_FN,
     KEYWORD_VAR,
     KEYWORD_CONST,
+    KEYWORD_ENUM,
+    KEYWORD_CLASS,
+    KEYWORD_OPERATOR,
+    KEYWORD_PUBLIC,
+    KEYWORD_PRIVATE,
+    KEYWORD_PROTECTED,
+    KEYWORD_THIS,
     KEYWORD_MATCH,
     KEYWORD_IF,
     KEYWORD_ELSE,
@@ -38,6 +49,7 @@ enum class TokenType {
     KEYWORD_FALSE,
     KEYWORD_NIL,
     KEYWORD_STRUCT,
+    KEYWORD_UNION,
     KEYWORD_FOR,
     KEYWORD_IN,
     KEYWORD_CASE,
@@ -47,6 +59,9 @@ enum class TokenType {
     KEYWORD_TRY,
     KEYWORD_CATCH,
     KEYWORD_THROW,
+    KEYWORD_DEFER,
+    KEYWORD_BREAK,
+    KEYWORD_CONTINUE,
 
     // Special
     TOKEN_EOF,
@@ -77,6 +92,12 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::STAR: return "*";
         case TokenType::SLASH: return "/";
         case TokenType::PERCENT: return "%";
+        case TokenType::AMPERSAND: return "&";
+        case TokenType::PIPE: return "|";
+        case TokenType::CARET: return "^";
+        case TokenType::TILDE: return "~";
+        case TokenType::BIT_LSHIFT: return "<<";
+        case TokenType::BIT_RSHIFT: return ">>";
         case TokenType::EQUAL: return "=";
         case TokenType::EQUAL_EQUAL: return "==";
         case TokenType::FAT_ARROW: return "=>";
@@ -91,6 +112,9 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::KEYWORD_FN: return "fn";
         case TokenType::KEYWORD_VAR: return "var";
         case TokenType::KEYWORD_CONST: return "const";
+        case TokenType::KEYWORD_ENUM: return "enum";
+        case TokenType::KEYWORD_CLASS: return "class";
+        case TokenType::KEYWORD_THIS: return "this";
         case TokenType::KEYWORD_MATCH: return "match";
         case TokenType::KEYWORD_IF: return "if";
         case TokenType::KEYWORD_ELSE: return "else";
@@ -109,10 +133,14 @@ inline std::string tokenTypeToString(TokenType type) {
         case TokenType::KEYWORD_TRY: return "try";
         case TokenType::KEYWORD_CATCH: return "catch";
         case TokenType::KEYWORD_THROW: return "throw";
+        case TokenType::KEYWORD_DEFER: return "defer";
+        case TokenType::KEYWORD_BREAK: return "break";
+        case TokenType::KEYWORD_CONTINUE: return "continue";
         case TokenType::TOKEN_EOF: return "EOF";
         default: return "UNKNOWN";
     }
 }
+
 
 } // namespace srl
 
