@@ -130,15 +130,6 @@ print("Current Process ID: " + to_string(sys_pid()));
 
 ---
 
-## VS Code IDE Extension
-
-Language support extension located in `srl-vscode-extension`:
-- Syntax Highlighting (`.srl`)
-- Snippet Auto-completion
-- Pre-packaged `.vsix` installer included
-
----
-
 ## License
 
 Distributed under the **GNU General Public License v3.0 (GPLv3)**. See `LICENSE` for details.
