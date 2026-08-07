@@ -19,7 +19,12 @@ Value WeakRefObject::lock() const {
     return Value(); // nil if deallocated
 }
 
+thread_local int g_toStringDepth = 0;
+
 std::string Value::toString() const {
+    if (g_toStringDepth > 32) {
+        return "..."; // Prevent infinite recursion on circular structures
+    }
     switch (type) {
         case ValueType::NIL: return "nil";
         case ValueType::BOOL: return asBool() ? "true" : "false";
@@ -37,6 +42,7 @@ std::string Value::toString() const {
         case ValueType::NATIVE_FN: return "<native fn>";
         case ValueType::WEAK_REF: return "<weak_ref " + std::string(asWeakRef()->isValid() ? "valid" : "expired") + ">";
         case ValueType::ARRAY: {
+            g_toStringDepth++;
             std::string res = "[";
             auto arr = asArray();
             for (size_t i = 0; i < arr->size(); ++i) {
@@ -44,9 +50,11 @@ std::string Value::toString() const {
                 if (i + 1 < arr->size()) res += ", ";
             }
             res += "]";
+            g_toStringDepth--;
             return res;
         }
         case ValueType::MAP: {
+            g_toStringDepth++;
             std::string res = "{";
             auto map = asMap();
             size_t idx = 0;
@@ -56,6 +64,7 @@ std::string Value::toString() const {
                 idx++;
             }
             res += "}";
+            g_toStringDepth--;
             return res;
         }
     }

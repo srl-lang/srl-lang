@@ -108,26 +108,6 @@ static void autoLoadPlugins(srl::VM& vm, const std::string& scriptPath) {
 }
 
 
-static void printUsage() {
-    std::cout << "========================================================\n";
-    std::cout << "  SRL Toolchain & Self-Hosted Compiler v0.3.0\n";
-    std::cout << "========================================================\n";
-    std::cout << "Usage:\n";
-    std::cout << "  srl run <file.srl> [--jit]      Run SRL script in Bytecode VM or JIT mode\n";
-    std::cout << "  srl jit <file.srl>              Run SRL script using JIT Compiler Engine\n";
-    std::cout << "  srl compile <file.srl> [-o bin] Self-Hosted Compilation using srlc.srl\n";
-    std::cout << "  srl bootstrap                   Self-hosting compiler bootstrapping test\n";
-    std::cout << "  srl build <file.srl> [-o bin]   Compile SRL script to Standalone Native Binary\n";
-    std::cout << "  srl bind <header.h> [-o out]   Auto-generate SRL bindings from C header file\n";
-    std::cout << "  srl watch <file.srl>            Run SRL script with Live Hot-Reloading\n";
-    std::cout << "  srl init [project_name]        Initialize a new SRL package manifest (srl.json)\n";
-    std::cout << "  srl install <user/repo>        Install package from GitHub into srl_modules/\n";
-    std::cout << "  srl test [test_file.srl]       Run SRL test suite / unit tests\n";
-    std::cout << "  srl bench <file.srl>            Benchmark SRL script execution time & memory\n";
-    std::cout << "  srl pm                          Display Package Manager info & commands\n";
-    std::cout << "  srl version                     Display version info\n";
-    std::cout << "  srl help                        Display this help menu\n\n";
-}
 
 struct LockedPackage {
     std::string name;
@@ -137,7 +117,11 @@ struct LockedPackage {
 
 static std::string getGitCommitHash(const std::string& pkgPath) {
     std::string commitHash = "HEAD";
+#ifdef _WIN32
     std::string cmd = "git -C \"" + pkgPath + "\" rev-parse HEAD > temp_commit.txt 2>NUL";
+#else
+    std::string cmd = "git -C \"" + pkgPath + "\" rev-parse HEAD > temp_commit.txt 2>/dev/null";
+#endif
     if (std::system(cmd.c_str()) == 0 && fs::exists("temp_commit.txt")) {
         std::ifstream file("temp_commit.txt");
         if (file >> commitHash) {
@@ -263,7 +247,11 @@ static void restoreFromLockFile() {
             std::string cloneCmd = "git clone https://github.com/" + pkg.repo + ".git \"" + destPath.string() + "\"";
             std::system(cloneCmd.c_str());
             if (pkg.commit != "HEAD") {
+#ifdef _WIN32
                 std::string checkoutCmd = "git -C \"" + destPath.string() + "\" checkout " + pkg.commit + " 2>NUL";
+#else
+                std::string checkoutCmd = "git -C \"" + destPath.string() + "\" checkout " + pkg.commit + " 2>/dev/null";
+#endif
                 std::system(checkoutCmd.c_str());
             }
         } else {
@@ -341,6 +329,14 @@ int main(int argc, char* argv[]) {
     if (arg1 == "clean") {
         return srl::cli::handleClean(argc, argv);
     }
+    if (arg1 == "setup" || arg1 == "install-self") {
+        return srl::cli::handleSetup(argc, argv);
+    }
+    if (arg1 == "installer") {
+        return srl::cli::handleInstallerCmd(argc, argv);
+    }
+
+
 
     // --- SRL JIT ENGINE ---
     if (arg1 == "jit" || (arg1 == "run" && argc >= 4 && std::string(argv[3]) == "--jit")) {
@@ -377,50 +373,6 @@ int main(int argc, char* argv[]) {
         std::string src = readFile("compiler/srlc.srl");
         srl::VM vm;
         vm.interpret(src);
-        return 0;
-    }
-
-    // --- SRL INIT ---
-    if (arg1 == "init") {
-
-        std::string projName = (argc >= 3) ? argv[2] : "my_srl_app";
-        std::string jsonPath = "srl.json";
-
-        if (fs::exists(jsonPath)) {
-            std::cout << "[SRL PM] 'srl.json' manifest already exists in current directory.\n";
-            return 0;
-        }
-
-        std::ofstream jsonFile(jsonPath);
-        jsonFile << "{\n";
-        jsonFile << "  \"name\": \"" << projName << "\",\n";
-        jsonFile << "  \"version\": \"0.1.0\",\n";
-        jsonFile << "  \"description\": \"SRL Application Package\",\n";
-        jsonFile << "  \"main\": \"main.srl\",\n";
-        jsonFile << "  \"dependencies\": {}\n";
-        jsonFile << "}\n";
-        jsonFile.close();
-
-        if (!fs::exists("main.srl")) {
-            std::ofstream mainFile("main.srl");
-            mainFile << "// SRL Project Entry Point\n";
-            mainFile << "import(\"std/math.srl\");\n\n";
-            mainFile << "print(\"Welcome to " << projName << " powered by SRL!\");\n";
-            mainFile.close();
-        }
-
-        fs::create_directories("srl_modules");
-        if (!fs::exists("srl.lock")) {
-            std::ofstream lockFile("srl.lock");
-            lockFile << "{\n  \"lockfile_version\": 1,\n  \"packages\": {}\n}\n";
-            lockFile.close();
-        }
-
-        std::cout << "[Package] Initialized SRL package '" << projName << "' successfully!\n";
-        std::cout << "  - Created 'srl.json'\n";
-        std::cout << "  - Created 'main.srl'\n";
-        std::cout << "  - Created 'srl.lock'\n";
-        std::cout << "  - Created 'srl_modules/' directory\n";
         return 0;
     }
 
@@ -545,31 +497,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // --- SRL CHECK (Static Analysis / Type Check) ---
-    if (arg1 == "check") {
-        if (argc < 3) {
-            std::cerr << "[SRL Error] Expected script file: srl check <file.srl>\n";
-            return 1;
-        }
-        std::string filePath = argv[2];
-        std::string source = readFile(filePath);
-
-        std::cout << "[Check] Running static analysis & syntax verification for '" << filePath << "'...\n";
-        try {
-            srl::Lexer lexer(source);
-            auto tokens = lexer.scanTokens();
-            srl::Parser parser(tokens);
-            auto statements = parser.parse();
-
-            std::cout << "[Check] Parse & type annotations check completed with 0 errors.\n";
-            std::cout << "SUCCESS: Script '" << filePath << "' passed static verification!\n";
-        } catch (const std::exception& e) {
-            std::cerr << "[Check Error] Static analysis failed: " << e.what() << std::endl;
-            return 1;
-        }
-        return 0;
-    }
-
     // --- SRL BENCHMARK ---
     if (arg1 == "bench") {
         if (argc < 3) {
@@ -667,7 +594,11 @@ int main(int argc, char* argv[]) {
 
         if (outPath.empty()) {
             fs::path p(filePath);
+#ifdef _WIN32
             outPath = p.stem().string() + ".exe";
+#else
+            outPath = p.stem().string();
+#endif
         }
 
         if (aotMode) {

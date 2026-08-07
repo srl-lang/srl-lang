@@ -1,0 +1,35 @@
+// ============================================================================
+// std/installer.srl - Modern GUI Installer Generator Library for SRL
+// ============================================================================
+
+import("std/sys.srl");
+
+class SRLInstallerBuilder {
+    public:
+        var appName;
+        var appVersion;
+        var scriptPath;
+
+        fn init(name, version) {
+            this.appName = name;
+            this.appVersion = version;
+            this.scriptPath = "main.srl";
+        }
+
+        fn set_script(path) {
+            this.scriptPath = path;
+            return this;
+        }
+
+        fn build(out_installer_name) {
+            print("[Installer Generator] Building modern GUI installer for package: " + this.appName + " v" + this.appVersion);
+            var cmd = "srl installer \"" + this.scriptPath + "\" -o \"" + out_installer_name + "\" --name \"" + this.appName + "\"";
+            var res = sys_exec(cmd);
+            print("[Installer Generator] Created GUI setup wizard installer: " + out_installer_name);
+            return res;
+        }
+}
+
+fn create_installer(appName, appVersion) {
+    return SRLInstallerBuilder(appName, appVersion);
+}

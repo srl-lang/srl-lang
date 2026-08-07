@@ -2,7 +2,9 @@
 #define NOMINMAX
 #endif
 #include "cli.hpp"
+#include "installer.hpp"
 #include "vm.hpp"
+
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -63,7 +65,7 @@ void Term::warn(const std::string& header, const std::string& message) {
 
 void printVersion() {
     Term::enableAnsi();
-    std::cout << Term::bold("SRL Language Compiler Toolchain") << " v0.3.1\n";
+    std::cout << Term::bold("SRL Language Compiler Toolchain") << " v0.3.2\n";
     std::cout << "Target: x86_64-pc-windows-msvc (Bytecode VM & AOT JIT Engine)\n";
 }
 
@@ -80,7 +82,11 @@ void printHelp() {
     std::cout << "  " << Term::cyan("test [file.srl]") << "           Run project test suite (*.test.srl)\n";
     std::cout << "  " << Term::cyan("fmt [file.srl]") << "            Auto-format SRL source files\n";
     std::cout << "  " << Term::cyan("clean") << "                    Clean build artifacts (build/, bin/)\n";
-    std::cout << "  " << Term::cyan("doc") << "                      Generate HTML documentation from comments\n\n";
+    std::cout << "  " << Term::cyan("doc") << "                      Generate HTML documentation from comments\n";
+    std::cout << "  " << Term::cyan("setup") << "                    Run native toolchain installer & environment setup\n";
+    std::cout << "  " << Term::cyan("installer <file.srl>") << "      Build standalone GUI setup installer for project\n\n";
+
+
     std::cout << Term::bold("Package Manager Commands:") << "\n";
     std::cout << "  " << Term::cyan("add <user/repo>") << "           Add package dependency to srl.json\n";
     std::cout << "  " << Term::cyan("remove <name>") << "             Remove package dependency from srl.json\n\n";
@@ -254,5 +260,15 @@ int handleFmt(int argc, char* argv[]) {
     return 0;
 }
 
+int handleSetup(int argc, char* argv[]) {
+    return srl::installer::runInstallerCli(argc, argv);
+}
+
+int handleInstallerCmd(int argc, char* argv[]) {
+    return srl::installer::handleInstallerCli(argc, argv);
+}
+
 } // namespace cli
 } // namespace srl
+
+

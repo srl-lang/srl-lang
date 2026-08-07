@@ -42,6 +42,7 @@ static void bridge_define_native_impl(void* vm_ptr, const char* name, SRL_Native
 
     NativeFn wrapper = [fn](int argc, const Value* args) -> Value {
         SRL_Value outStorage{};
+        ::new (&outStorage) Value();
 
         fn(argc, reinterpret_cast<const SRL_Value*>(args), &outStorage);
         Value* vPtr = reinterpret_cast<Value*>(&outStorage);

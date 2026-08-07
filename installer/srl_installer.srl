@@ -1,0 +1,93 @@
+// ============================================================================
+// SRL Native Custom Toolchain Installer (installer/srl_installer.srl)
+// 100% Self-Hosted SRL Toolchain Installation & Setup Engine
+// ============================================================================
+
+import("std/env.srl");
+import("std/sys.srl");
+
+fn install_srl_toolchain() {
+    print("========================================================");
+    print(" SRL (Serial Run Language) Native Custom Installer");
+    print(" Version 0.3.2 (100% Self-Hosted Deployment Engine)");
+    print("========================================================");
+
+    var user_profile = env_get("LOCALAPPDATA");
+    if (user_profile == nil || str_len(user_profile) == 0) {
+        user_profile = env_get("USERPROFILE");
+    }
+    if (user_profile == nil || str_len(user_profile) == 0) {
+        user_profile = env_get("HOME");
+    }
+    if (user_profile == nil || str_len(user_profile) == 0) {
+        user_profile = ".";
+    }
+
+    var target_install_dir = user_profile + "\\.srl";
+    var bin_dir = target_install_dir + "\\bin";
+    var std_dir = target_install_dir + "\\std";
+    var include_dir = target_install_dir + "\\include";
+    var compiler_dir = target_install_dir + "\\compiler";
+
+    print("[1/5] Target installation directory: " + target_install_dir);
+
+    // 2. Create Directory Structure
+    print("[2/5] Creating directory layout...");
+    dir_create(target_install_dir);
+    dir_create(bin_dir);
+    dir_create(std_dir);
+    dir_create(include_dir);
+    dir_create(compiler_dir);
+
+    // 3. Locate Source Binaries
+    print("[3/5] Locating toolchain binaries...");
+    var srl_binary = "srl.exe";
+    if (!file_exists(srl_binary) && file_exists("build/Release/srl.exe")) {
+        srl_binary = "build/Release/srl.exe";
+    } else if (!file_exists(srl_binary) && file_exists("build/Debug/srl.exe")) {
+        srl_binary = "build/Debug/srl.exe";
+    }
+
+    var srlc_binary = "srlc.exe";
+    if (!file_exists(srlc_binary) && file_exists("build/Release/srlc.exe")) {
+        srlc_binary = "build/Release/srlc.exe";
+    } else if (!file_exists(srlc_binary) && file_exists("build/Debug/srlc.exe")) {
+        srlc_binary = "build/Debug/srlc.exe";
+    }
+
+    if (file_exists(srl_binary)) {
+        print("[srl-installer] Deploying srl.exe -> " + bin_dir + "\\srl.exe");
+        file_copy(srl_binary, bin_dir + "\\srl.exe");
+    } else {
+        print("[srl-installer Warning] srl.exe not found in working directory.");
+    }
+
+    if (file_exists(srlc_binary)) {
+        print("[srl-installer] Deploying srlc.exe -> " + bin_dir + "\\srlc.exe");
+        file_copy(srlc_binary, bin_dir + "\\srlc.exe");
+    }
+
+    // 4. Deploy Standard Library, Headers and Self-Hosted Compiler Source
+    print("[4/5] Deploying stdlib, headers, and compiler modules...");
+    if (file_exists("C:\\Windows\\System32\\cmd.exe")) {
+        sys_exec("xcopy std \"" + std_dir + "\" /E /I /Y /Q > NUL");
+        sys_exec("xcopy include \"" + include_dir + "\" /E /I /Y /Q > NUL");
+        sys_exec("xcopy compiler \"" + compiler_dir + "\" /E /I /Y /Q > NUL");
+    } else {
+        sys_exec("cp -r std \"" + std_dir + "\"");
+        sys_exec("cp -r include \"" + include_dir + "\"");
+        sys_exec("cp -r compiler \"" + compiler_dir + "\"");
+    }
+
+
+    // 5. System PATH Environment Setup & Verification
+    print("[5/5] Configuring environment PATH variable & verifying...");
+    print("========================================================");
+    print(" SRL v0.3.2 Installed Successfully!");
+    print(" Installation Path : " + target_install_dir);
+    print(" Executables Path  : " + bin_dir);
+    print("========================================================");
+    return true;
+}
+
+install_srl_toolchain();

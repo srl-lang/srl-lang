@@ -1,0 +1,15 @@
+// examples/test_gui_installer.srl - Universal Project GUI Installer Generator Demo
+import("std/installer.srl");
+
+print("========================================================");
+print(" SRL Project Modern GUI Installer Generator Demo");
+print("========================================================");
+
+// 1. Create a custom GUI installer for an SRL application
+var builder = create_installer("Audio Synthesizer Pro", "1.2.0");
+builder.set_script("examples/music_player.srl");
+
+print("Generating modern standalone setup wizard (audio_synth_setup.exe)...");
+builder.build("audio_synth_setup.exe");
+
+print("SUCCESS: Created 'audio_synth_setup.exe' modern GUI setup installer!");

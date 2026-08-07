@@ -1,6 +1,6 @@
-# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.3.1 Technical Standard)
+# SRL (Serial Run Language) - Complete Architecture & Technical Specification Manual (v0.3.2 Technical Standard)
 
-**Version:** `v0.3.1`  
+**Version:** `v0.3.2`  
 **License:** GNU General Public License v3.0 (GPLv3)  
 **Execution Model:** 100% Self-Hosted Compiler (`compiler/srlc.srl`), Bytecode Virtual Machine, & Standalone Native Binary Bundler  
 

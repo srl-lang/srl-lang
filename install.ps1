@@ -1,8 +1,8 @@
-# SRL Toolchain v0.3.0 Automated PowerShell Installer for Windows
+# SRL Toolchain v0.3.2 Automated PowerShell Installer for Windows
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "  SRL (Serial Run Language) v0.3.0 Windows Installer" -ForegroundColor Cyan
+Write-Host "  SRL (Serial Run Language) v0.3.2 Windows Installer" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -86,7 +86,7 @@ $env:PATH = "$env:PATH;$BinDir"
 
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
-Write-Host "  SRL v0.3.0 Toolchain Installed Successfully!" -ForegroundColor Green
+Write-Host "  SRL v0.3.2 Toolchain Installed Successfully!" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host "  Installation Location : $InstallDir" -ForegroundColor White
 Write-Host "  Executable Location   : $BinDir\srl.exe" -ForegroundColor White

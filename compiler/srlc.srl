@@ -8,7 +8,7 @@ import("std/env.srl");
 
 print("========================================================");
 print(" SRL Self-Hosted Native Compiler (srlc)");
-print(" Version 0.3.1 (Self-Hosting Engine)");
+print(" Version 0.3.2 (Self-Hosting Engine)");
 print("========================================================");
 
 fn uint64_to_bytes(n) {
@@ -27,6 +27,12 @@ fn compileFile(input_path, output_path) {
         return false;
     }
 
+    var opt_level = env_get("SRL_OPT");
+    if (opt_level == nil || str_len(opt_level) == 0) {
+        opt_level = "-O2";
+    }
+    print("[srlc Configuration] Optimization Level: " + opt_level);
+
     print("[srlc] Phase 1: Lexical Analysis...");
     var lexerObj = Lexer(source_code);
     var tokens = lexerObj.scanTokens();
@@ -40,10 +46,28 @@ fn compileFile(input_path, output_path) {
     var generator = CodeGenerator();
     var compiled_output = generator.generate(program);
 
+    if (str_ends_with(output_path, ".ll")) {
+        print("[srlc] Emitting raw LLVM IR to: " + output_path);
+        file_write(output_path, compiled_output);
+        print("[srlc SUCCESS] Created LLVM IR module at: " + output_path);
+        return true;
+    }
+
     print("[srlc] Phase 4: Bundling Standalone Executable Payload...");
-    var self_exe = "build/Debug/srl.exe";
-    if (!file_exists(self_exe)) {
-        self_exe = "srl.exe";
+    var candidates = arr_new();
+    arr_push(candidates, "build/Debug/srl.exe");
+    arr_push(candidates, "build/Release/srl.exe");
+    arr_push(candidates, "build/srl.exe");
+    arr_push(candidates, "srl.exe");
+    arr_push(candidates, "build/srl");
+    arr_push(candidates, "srl");
+
+    var self_exe = "";
+    for (var i = 0; i < arr_len(candidates); i = i + 1) {
+        if (file_exists(candidates[i])) {
+            self_exe = candidates[i];
+            break;
+        }
     }
     print("[srlc] Template executable path: " + self_exe);
 
@@ -77,3 +101,4 @@ if (env_out != nil && str_len(env_out) > 0) {
 }
 
 compileFile(target_input, target_output);
+

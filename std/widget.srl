@@ -37,6 +37,7 @@ fn widget_slider_create(x, y, w, min_val, max_val, current_val) {
 }
 
 fn widget_slider_render(slider) {
+    if (slider == nil) { return nil; }
     var x = map_get(slider, "x");
     var y = map_get(slider, "y");
     var w = map_get(slider, "w");
@@ -44,11 +45,21 @@ fn widget_slider_render(slider) {
     var max_v = map_get(slider, "max");
     var val = map_get(slider, "val");
 
+    if (x == nil) { x = 0; }
+    if (y == nil) { y = 0; }
+    if (w == nil) { w = 100; }
+    if (min_v == nil) { min_v = 0; }
+    if (max_v == nil) { max_v = 100; }
+    if (val == nil) { val = min_v; }
+
     // Line track
     gfx_draw_line(x, y + 10, x + w, y + 10, "gray");
 
     // Thumb position
-    var ratio = (val - min_v) / (max_v - min_v);
+    var ratio = 0;
+    if (max_v != min_v) {
+        ratio = (val - min_v) / (max_v - min_v);
+    }
     var thumb_x = x + math_floor(w * ratio);
 
     gfx_fill_circle(thumb_x, y + 10, 8, "cyan");

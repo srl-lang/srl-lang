@@ -535,13 +535,6 @@ void VM::registerNativeFunctions() {
         return Value(argCount >= 1 && args[0].isArray());
     });
 
-    defineNative("math_floor", [](int argCount, const Value* args) -> Value {
-        if (argCount > 0 && args[0].isNumber()) {
-            return Value(std::floor(args[0].asNumber()));
-        }
-        return Value(0.0);
-    });
-
     defineNative("floor", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {
             return Value(std::floor(args[0].asNumber()));
@@ -549,24 +542,11 @@ void VM::registerNativeFunctions() {
         return Value(0.0);
     });
 
-    defineNative("str_from_code", [](int argCount, const Value* args) -> Value {
-        if (argCount > 0 && args[0].isNumber()) {
-            char c = static_cast<char>(static_cast<int>(args[0].asNumber()));
-            return Value(std::string(1, c));
-        }
-        return Value("");
-    });
-
     defineNative("chr", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {
             char c = static_cast<char>(static_cast<int>(args[0].asNumber()));
             return Value(std::string(1, c));
         }
-        return Value("");
-    });
-
-    defineNative("to_string", [](int argCount, const Value* args) -> Value {
-        if (argCount > 0) return Value(args[0].toString());
         return Value("");
     });
 
@@ -667,14 +647,6 @@ void VM::registerNativeFunctions() {
             return Value(static_cast<double>(static_cast<unsigned char>(args[0].asString()[0])));
         }
         return Value(0.0);
-    });
-
-    defineNative("str_from_code", [](int argCount, const Value* args) -> Value {
-        if (argCount > 0 && args[0].isNumber()) {
-            char c = static_cast<char>(args[0].asNumber());
-            return Value(std::string(1, c));
-        }
-        return Value("");
     });
 
     defineNative("str_upper", [](int argCount, const Value* args) -> Value {
@@ -806,17 +778,13 @@ void VM::registerNativeFunctions() {
             std::string path = args[0].asString();
             std::filesystem::path p(path);
             std::filesystem::path abs_path = std::filesystem::absolute(p);
-            std::cout << "[native file_write] Target absolute path: " << abs_path.string() << std::endl;
             FILE* f = fopen(abs_path.string().c_str(), "wb");
             if (f) {
                 const std::string& data = args[1].asString();
                 size_t written = fwrite(data.data(), 1, data.size(), f);
                 fflush(f);
                 fclose(f);
-                std::cout << "[native file_write] Wrote " << written << " bytes to path: " << abs_path.string() << std::endl;
                 return Value(written == data.size());
-            } else {
-                std::cerr << "[native file_write ERROR] Failed to fopen path: " << abs_path.string() << std::endl;
             }
         }
         return Value(false);
@@ -829,13 +797,6 @@ void VM::registerNativeFunctions() {
                 file << args[1].asString();
                 return Value(true);
             }
-        }
-        return Value(false);
-    });
-
-    defineNative("file_exists", [](int argCount, const Value* args) -> Value {
-        if (argCount > 0 && args[0].isString()) {
-            return Value(std::filesystem::exists(args[0].asString()));
         }
         return Value(false);
     });
@@ -1042,14 +1003,18 @@ InterpretResult VM::runFunction(const std::string& fnName) {
 
     auto fnObj = fnValue.asFunction();
 
-    // Call the function
-    Value callVal = fnValue;
-    push(callVal); // push function object onto stack
+    // Push the function object onto the stack, then create and push a CallFrame
+    push(fnValue);
 
     CallFrame frame;
     frame.function = fnObj;
-    // For hot reloaded functions, we execute their body by calling them
-    return InterpretResult::INTERPRET_OK;
+    frame.chunk = fnObj->chunk.get();
+    frame.ip = 0;
+    frame.stackOffset = stack_.size();
+    frames_.push_back(frame);
+
+    size_t initialDepth = frames_.size() - 1;
+    return run(initialDepth);
 }
 
 InterpretResult VM::run(size_t targetFrameDepth) {

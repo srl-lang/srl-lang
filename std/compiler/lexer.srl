@@ -136,7 +136,7 @@ class Lexer {
 
             // Identifiers and Keywords
             var ident = "";
-            while (!Lexer_isAtEnd(this) && (Lexer_peek(this) != " " && Lexer_peek(this) != "\n" && Lexer_peek(this) != "\r" && Lexer_peek(this) != "\t" && Lexer_peek(this) != "(" && Lexer_peek(this) != ")" && Lexer_peek(this) != "{" && Lexer_peek(this) != "}" && Lexer_peek(this) != "[" && Lexer_peek(this) != "]" && Lexer_peek(this) != ";" && Lexer_peek(this) != "," && Lexer_peek(this) != "." && Lexer_peek(this) != ":" && Lexer_peek(this) != "=" && Lexer_peek(this) != "<" && Lexer_peek(this) != ">" && Lexer_peek(this) != "+" && Lexer_peek(this) != "-" && Lexer_peek(this) != "*" && Lexer_peek(this) != "/" && Lexer_peek(this) != "!" && Lexer_peek(this) != "%")) {
+            while (!Lexer_isAtEnd(this) && str_len(Lexer_peek(this)) > 0 && (Lexer_peek(this) != " " && Lexer_peek(this) != "\n" && Lexer_peek(this) != "\r" && Lexer_peek(this) != "\t" && Lexer_peek(this) != "\"" && Lexer_peek(this) != "(" && Lexer_peek(this) != ")" && Lexer_peek(this) != "{" && Lexer_peek(this) != "}" && Lexer_peek(this) != "[" && Lexer_peek(this) != "]" && Lexer_peek(this) != ";" && Lexer_peek(this) != "," && Lexer_peek(this) != "." && Lexer_peek(this) != ":" && Lexer_peek(this) != "=" && Lexer_peek(this) != "<" && Lexer_peek(this) != ">" && Lexer_peek(this) != "+" && Lexer_peek(this) != "-" && Lexer_peek(this) != "*" && Lexer_peek(this) != "/" && Lexer_peek(this) != "!" && Lexer_peek(this) != "%")) {
                 ident = ident + Lexer_advance(this);
             }
 

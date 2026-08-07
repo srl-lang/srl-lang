@@ -4,6 +4,11 @@
 
 namespace srl {
 
+// Single shared counter for all for-in loop desugaring synthetic variable names.
+// Using a file-scope static ensures both for-in forms (single-var and two-var)
+// always generate unique names across the entire parse of one translation unit.
+static size_t s_forInLoopId = 0;
+
 Parser::Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
 
 std::vector<StmtPtr> Parser::parse() {
@@ -346,8 +351,7 @@ StmtPtr Parser::forStatement() {
             consume(TokenType::RIGHT_PAREN, "Expect ')' after for-in expression.");
             StmtPtr body = statement();
 
-            static size_t loopId = 0;
-            std::string idStr = std::to_string(++loopId);
+            std::string idStr = std::to_string(++s_forInLoopId);
             Token collTok(TokenType::IDENTIFIER, "_coll_" + idStr, previous().line, previous().column);
             Token keysTok(TokenType::IDENTIFIER, "_keys_" + idStr, previous().line, previous().column);
             Token iTok(TokenType::IDENTIFIER, "_i_" + idStr, previous().line, previous().column);
@@ -395,8 +399,7 @@ StmtPtr Parser::forStatement() {
             consume(TokenType::RIGHT_PAREN, "Expect ')' after for-in expression.");
             StmtPtr body = statement();
 
-            static size_t loopId = 0;
-            std::string idStr = std::to_string(++loopId);
+            std::string idStr = std::to_string(++s_forInLoopId);
             Token collTok(TokenType::IDENTIFIER, "_coll_" + idStr, previous().line, previous().column);
             Token iTok(TokenType::IDENTIFIER, "_i_" + idStr, previous().line, previous().column);
             Token lenTok(TokenType::IDENTIFIER, "_len_" + idStr, previous().line, previous().column);

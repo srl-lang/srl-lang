@@ -1,6 +1,6 @@
 # SRL API Reference Documentation
 
-Version: `v0.3.1`
+Version: `v0.3.2`
 
 ## Core Modules & API Specification
 

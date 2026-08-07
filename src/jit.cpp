@@ -21,10 +21,10 @@ JITEngine::~JITEngine() = default;
 
 void* JITEngine::allocateExecutableMemory(size_t size) {
 #ifdef _WIN32
-    void* ptr = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    void* ptr = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     return ptr;
 #else
-    void* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    void* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     if (ptr == MAP_FAILED) return nullptr;
     return ptr;
 #endif
@@ -42,18 +42,26 @@ void JITEngine::freeExecutableMemory(void* ptr, size_t size) {
 InterpretResult JITEngine::compileAndRun(const std::string& source) {
     auto startJit = std::chrono::high_resolution_clock::now();
 
-    // Allocate 4KB JIT executable memory buffer page
+    // Allocate 4KB JIT memory buffer page (Read-Write first for W^X compliance)
     size_t jitPageSize = 4096;
     void* jitCodeBuffer = allocateExecutableMemory(jitPageSize);
 
     if (!jitCodeBuffer) {
-        std::cerr << "[SRL JIT Error] Failed to allocate executable machine memory page." << std::endl;
+        std::cerr << "[SRL JIT Error] Failed to allocate machine memory page." << std::endl;
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
     }
 
-    // Emit x86_64 ret instruction (0xC3) in executable page as sanity check
+    // Emit x86_64 ret instruction (0xC3) in memory page
     unsigned char* code = static_cast<unsigned char*>(jitCodeBuffer);
     code[0] = 0xC3; // ret
+
+    // W^X Compliance: Switch memory page protection from Read-Write to Read-Execute
+#ifdef _WIN32
+    DWORD oldProtect = 0;
+    VirtualProtect(jitCodeBuffer, jitPageSize, PAGE_EXECUTE_READ, &oldProtect);
+#else
+    mprotect(jitCodeBuffer, jitPageSize, PROT_READ | PROT_EXEC);
+#endif
 
     // Invoke JIT machine code subroutine
     using JITSubroutine = void(*)();

@@ -25,19 +25,22 @@ typedef int SOCKET;
 #define closesocket(s) close(s)
 #endif
 
+#include <mutex>
+#include <atomic>
+
 namespace srl {
 
-static bool winsockInitialized = false;
+static std::once_flag g_winsockInitFlag;
 static std::unordered_map<double, SOCKET> openSockets;
 static double sockIdCounter = 1.0;
+static std::mutex g_netMutex;
 
 static void ensureWinsock() {
 #ifdef _WIN32
-    if (!winsockInitialized) {
+    std::call_once(g_winsockInitFlag, []() {
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2, 2), &wsaData);
-        winsockInitialized = true;
-    }
+    });
 #endif
 }
 
@@ -80,7 +83,7 @@ void NET::registerNativeFunctions(VM& vm) {
             }
             freeaddrinfo(res);
 
-            std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: SRL-Lang/0.2.0\r\nConnection: close\r\n\r\n";
+            std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: SRL-Lang/0.3.2\r\nConnection: close\r\n\r\n";
             send(s, req.c_str(), (int)req.length(), 0);
 
             std::string response;
@@ -111,6 +114,7 @@ void NET::registerNativeFunctions(VM& vm) {
                 SOCKET s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
                 if (s != INVALID_SOCKET) {
                     if (connect(s, res->ai_addr, (int)res->ai_addrlen) == 0) {
+                        std::lock_guard<std::mutex> lock(g_netMutex);
                         double id = sockIdCounter++;
                         openSockets[id] = s;
                         freeaddrinfo(res);
@@ -129,9 +133,16 @@ void NET::registerNativeFunctions(VM& vm) {
         if (argCount >= 2 && args[0].isNumber() && args[1].isString()) {
             double id = args[0].asNumber();
             std::string data = args[1].asString();
-            auto it = openSockets.find(id);
-            if (it != openSockets.end()) {
-                int sent = send(it->second, data.c_str(), static_cast<int>(data.length()), 0);
+            SOCKET s = INVALID_SOCKET;
+            {
+                std::lock_guard<std::mutex> lock(g_netMutex);
+                auto it = openSockets.find(id);
+                if (it != openSockets.end()) {
+                    s = it->second;
+                }
+            }
+            if (s != INVALID_SOCKET) {
+                int sent = send(s, data.c_str(), static_cast<int>(data.length()), 0);
                 return Value(static_cast<double>(sent));
             }
         }
@@ -143,10 +154,18 @@ void NET::registerNativeFunctions(VM& vm) {
         if (argCount > 0 && args[0].isNumber()) {
             double id = args[0].asNumber();
             int maxB = (argCount > 1 && args[1].isNumber()) ? static_cast<int>(args[1].asNumber()) : 1024;
-            auto it = openSockets.find(id);
-            if (it != openSockets.end()) {
+            if (maxB <= 0) return Value("");
+            SOCKET s = INVALID_SOCKET;
+            {
+                std::lock_guard<std::mutex> lock(g_netMutex);
+                auto it = openSockets.find(id);
+                if (it != openSockets.end()) {
+                    s = it->second;
+                }
+            }
+            if (s != INVALID_SOCKET) {
                 std::vector<char> buf(maxB + 1);
-                int bytes = recv(it->second, buf.data(), maxB, 0);
+                int bytes = recv(s, buf.data(), maxB, 0);
                 if (bytes > 0) {
                     buf[bytes] = '\0';
                     return Value(std::string(buf.data(), bytes));
@@ -160,6 +179,7 @@ void NET::registerNativeFunctions(VM& vm) {
     vm.defineNative("net_tcp_close", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {
             double id = args[0].asNumber();
+            std::lock_guard<std::mutex> lock(g_netMutex);
             auto it = openSockets.find(id);
             if (it != openSockets.end()) {
                 closesocket(it->second);

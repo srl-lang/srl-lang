@@ -31,6 +31,9 @@ int handleClean(int argc, char* argv[]);
 int handleAdd(int argc, char* argv[]);
 int handleRemove(int argc, char* argv[]);
 int handleDoc(int argc, char* argv[]);
+int handleSetup(int argc, char* argv[]);
+int handleInstallerCmd(int argc, char* argv[]);
+
 
 void printHelp();
 void printVersion();

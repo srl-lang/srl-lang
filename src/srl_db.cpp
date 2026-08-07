@@ -9,15 +9,19 @@
 #include <unordered_map>
 #include <filesystem>
 
+#include <mutex>
+
 namespace srl {
 
 struct DbStore {
     std::string filepath;
     std::unordered_map<std::string, std::string> data;
+    bool dirty = false;
 };
 
 static std::unordered_map<double, DbStore> openStores;
 static double dbCounter = 1.0;
+static std::mutex g_dbMutex;
 
 static std::string dbEscape(const std::string& s) {
     std::string res;
@@ -47,17 +51,20 @@ static std::string dbUnescape(const std::string& s) {
     return res;
 }
 
-static void saveStore(const DbStore& store) {
+static void saveStore(DbStore& store) {
+    if (!store.dirty) return;
     std::ofstream file(store.filepath);
     if (file.is_open()) {
         for (const auto& [k, v] : store.data) {
             file << dbEscape(k) << "=" << dbEscape(v) << "\n";
         }
+        store.dirty = false;
     }
 }
 
 static void loadStore(DbStore& store) {
     store.data.clear();
+    store.dirty = false;
     std::ifstream file(store.filepath);
     if (file.is_open()) {
         std::string line;
@@ -78,6 +85,7 @@ void DB::registerNativeFunctions(VM& vm) {
     vm.defineNative("db_open", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isString()) {
             std::string path = args[0].asString();
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             double id = dbCounter++;
             DbStore store;
             store.filepath = path;
@@ -95,10 +103,11 @@ void DB::registerNativeFunctions(VM& vm) {
             std::string key = args[1].asString();
             std::string val = args[2].toString();
 
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             auto it = openStores.find(id);
             if (it != openStores.end()) {
                 it->second.data[key] = val;
-                saveStore(it->second);
+                it->second.dirty = true;
                 return Value(true);
             }
         }
@@ -111,6 +120,7 @@ void DB::registerNativeFunctions(VM& vm) {
             double id = args[0].asNumber();
             std::string key = args[1].asString();
 
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             auto it = openStores.find(id);
             if (it != openStores.end()) {
                 auto dataIt = it->second.data.find(key);
@@ -128,6 +138,7 @@ void DB::registerNativeFunctions(VM& vm) {
             double id = args[0].asNumber();
             std::string key = args[1].asString();
 
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             auto it = openStores.find(id);
             if (it != openStores.end()) {
                 return Value(it->second.data.count(key) > 0);
@@ -142,9 +153,24 @@ void DB::registerNativeFunctions(VM& vm) {
             double id = args[0].asNumber();
             std::string key = args[1].asString();
 
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             auto it = openStores.find(id);
             if (it != openStores.end()) {
                 it->second.data.erase(key);
+                it->second.dirty = true;
+                return Value(true);
+            }
+        }
+        return Value(false);
+    });
+
+    // db_sync(db)
+    vm.defineNative("db_sync", [](int argCount, const Value* args) -> Value {
+        if (argCount > 0 && args[0].isNumber()) {
+            double id = args[0].asNumber();
+            std::lock_guard<std::mutex> lock(g_dbMutex);
+            auto it = openStores.find(id);
+            if (it != openStores.end()) {
                 saveStore(it->second);
                 return Value(true);
             }
@@ -156,6 +182,7 @@ void DB::registerNativeFunctions(VM& vm) {
     vm.defineNative("db_close", [](int argCount, const Value* args) -> Value {
         if (argCount > 0 && args[0].isNumber()) {
             double id = args[0].asNumber();
+            std::lock_guard<std::mutex> lock(g_dbMutex);
             auto it = openStores.find(id);
             if (it != openStores.end()) {
                 saveStore(it->second);

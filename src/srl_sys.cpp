@@ -17,6 +17,10 @@
 #include <windows.h>
 #include <psapi.h>
 #pragma comment(lib, "psapi.lib")
+#else
+#include <unistd.h>
+#include <sys/resource.h>
+#include <cstdio>
 #endif
 
 namespace srl {
@@ -35,6 +39,15 @@ void SYS::registerNativeFunctions(VM& vm) {
                     result += buffer.data();
                 }
                 _pclose(pipe);
+            }
+#else
+            FILE* pipe = popen(cmd.c_str(), "r");
+            if (pipe) {
+                std::array<char, 256> buffer;
+                while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+                    result += buffer.data();
+                }
+                pclose(pipe);
             }
 #endif
             return Value(result);
@@ -57,6 +70,9 @@ void SYS::registerNativeFunctions(VM& vm) {
 #ifdef _WIN32
             _putenv_s(args[0].asString().c_str(), args[1].asString().c_str());
             return Value(true);
+#else
+            setenv(args[0].asString().c_str(), args[1].asString().c_str(), 1);
+            return Value(true);
 #endif
         }
         return Value(false);
@@ -75,6 +91,11 @@ void SYS::registerNativeFunctions(VM& vm) {
         if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
             return Value(static_cast<double>(pmc.WorkingSetSize)); // in bytes
         }
+#else
+        struct rusage usage;
+        if (getrusage(RUSAGE_SELF, &usage) == 0) {
+            return Value(static_cast<double>(usage.ru_maxrss * 1024)); // kB to bytes
+        }
 #endif
         return Value(0.0);
     });
@@ -84,7 +105,7 @@ void SYS::registerNativeFunctions(VM& vm) {
 #ifdef _WIN32
         return Value(static_cast<double>(GetCurrentProcessId()));
 #else
-        return Value(0.0);
+        return Value(static_cast<double>(getpid()));
 #endif
     });
 

@@ -30,9 +30,19 @@ jobs:
         run: |
           .\build\Release\srl.exe run examples/test_libs.srl
           .\build\Release\srl.exe run examples/test_cpp_features.srl
+          .\build\Release\srl.exe test examples/math.test.srl
+          .\build\Release\srl.exe test examples/test_operator_overload.srl
+          .\build\Release\srl.exe test examples/test_access_control.srl
+          .\build\Release\srl.exe test examples/test_exceptions.srl
+          .\build\Release\srl.exe test examples/test_generics.srl
 
       - name: Run Standard Library Tests (Linux)
         if: runner.os == 'Linux'
         run: |
           ./build/srl run examples/test_libs.srl
           ./build/srl run examples/test_cpp_features.srl
+          ./build/srl test examples/math.test.srl
+          ./build/srl test examples/test_operator_overload.srl
+          ./build/srl test examples/test_access_control.srl
+          ./build/srl test examples/test_exceptions.srl
+          ./build/srl test examples/test_generics.srl

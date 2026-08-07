@@ -4,7 +4,7 @@
 
 Featuring a clean syntax, a fast bytecode virtual machine, and a 100% self-hosted native compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
-> **Current Version:** `v0.3.1`
+> **Current Version:** `v0.3.2`
 
 ---
 
@@ -118,7 +118,7 @@ print("Current Process ID: " + to_string(sys_pid()));
 
 ## Changelog
 
-### v0.3.1 (Self-Hosted Release)
+### Release v0.3.2
 - **100% Self-Hosted Compiler Parity** — `compiler/srlc.srl` and `compiler/codegen_llvm.srl` completely bootstrapped for native executable generation.
 - **Custom Operator Overloading** — Succeeded `fn operator+`, `fn operator-`, `fn operator*`, `fn operator/`, `fn operator[]`, `fn operator()`.
 - **Class Access Control Specifiers** — Encapsulation with `public:`, `private:`, and `protected:` modifiers.
