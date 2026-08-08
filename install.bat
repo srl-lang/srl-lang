@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ========================================================
-echo   Launching SRL v0.3.2 Windows Installer...
+echo   Launching SRL v0.3.3 Windows Installer...
 echo ========================================================
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"
 if %ERRORLEVEL% NEQ 0 (

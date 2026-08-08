@@ -13,7 +13,7 @@ namespace installer {
 
 struct GuiSetupConfig {
     std::string appName = "SRL Language Toolchain";
-    std::string appVersion = "0.3.2";
+    std::string appVersion = "0.3.3";
     std::string defaultInstallPath = "";
     std::string payloadSource = "";
     bool createDesktopShortcut = true;

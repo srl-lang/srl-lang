@@ -175,7 +175,7 @@ void NativeInstaller::verifyInstallation(const std::string& binDir) {
 bool NativeInstaller::run() {
     std::cout << "========================================================" << std::endl;
     std::cout << " SRL (Serial Run Language) Native Standalone Installer" << std::endl;
-    std::cout << " Version 0.3.2 (Custom Native Installer Engine)" << std::endl;
+    std::cout << " Version 0.3.3 (Custom Native Installer Engine)" << std::endl;
     std::cout << "========================================================" << std::endl;
 
     std::string targetDir = getTargetDir();

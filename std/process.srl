@@ -1,0 +1,43 @@
+// std/process.srl - Asynchronous Process Pipe Runner for SRL IDE Terminal & Runner
+
+class ProcessRunner {
+    fn init(command) {
+        this.command = command;
+        this.handle = gui_process_run(command);
+    }
+
+    fn poll() {
+        if (this.handle != nil) {
+            return gui_process_poll(this.handle);
+        }
+        return nil;
+    }
+
+    fn is_running() {
+        var status = this.poll();
+        if (status != nil && map_has(status, "running")) {
+            return map_get(status, "running");
+        }
+        return false;
+    }
+
+    fn get_stdout() {
+        var status = this.poll();
+        if (status != nil && map_has(status, "stdout")) {
+            return map_get(status, "stdout");
+        }
+        return "";
+    }
+
+    fn get_exit_code() {
+        var status = this.poll();
+        if (status != nil && map_has(status, "exit_code")) {
+            return map_get(status, "exit_code");
+        }
+        return -1;
+    }
+}
+
+fn process_run(command) {
+    return ProcessRunner(command);
+}

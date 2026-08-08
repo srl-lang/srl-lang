@@ -9,7 +9,7 @@ import("std/sys.srl");
 fn install_srl_toolchain() {
     print("========================================================");
     print(" SRL (Serial Run Language) Native Custom Installer");
-    print(" Version 0.3.2 (100% Self-Hosted Deployment Engine)");
+    print(" Version 0.3.3 (100% Self-Hosted Deployment Engine)");
     print("========================================================");
 
     var user_profile = env_get("LOCALAPPDATA");
@@ -83,7 +83,7 @@ fn install_srl_toolchain() {
     // 5. System PATH Environment Setup & Verification
     print("[5/5] Configuring environment PATH variable & verifying...");
     print("========================================================");
-    print(" SRL v0.3.2 Installed Successfully!");
+    print(" SRL v0.3.3 Installed Successfully!");
     print(" Installation Path : " + target_install_dir);
     print(" Executables Path  : " + bin_dir);
     print("========================================================");

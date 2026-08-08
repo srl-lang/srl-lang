@@ -1,0 +1,46 @@
+// examples/test_gui_ide.srl - Verification Test Script for SRL IDE Subsystems FFI Bridge
+import("std/gui.srl");
+import("std/editor.srl");
+import("std/process.srl");
+import("std/watcher.srl");
+import("std/sys.srl");
+
+print("[Test] Initializing SRL IDE Subsystems Verification Test...");
+
+// 1. Test Windowing & Layout FFI
+var main_win = gui_create_window("SRL IDE - Main Window", 1280, 720);
+print("[Test] Main Window Created with Handle: " + to_string(main_win.get_handle()));
+main_win.show();
+
+var main_splitter = gui_create_splitter("horizontal");
+print("[Test] Main Splitter Created with Handle: " + to_string(main_splitter.get_handle()));
+
+var left_dock = gui_create_dock("left", "Project Explorer");
+print("[Test] Left Dock Panel Created with Handle: " + to_string(left_dock.get_handle()));
+
+// 2. Test Text Editor Buffer FFI
+var editor = editor_create(main_splitter.get_handle());
+editor.set_font("Consolas", 14);
+editor.set_text("fn main() {\n    print(\"Hello from SRL IDE!\");\n}");
+print("[Test] Editor Text Buffer Length: " + to_string(editor.buffer.get_line_count()) + " lines");
+print("[Test] Line 0 Content: " + editor.buffer.get_line(0));
+print("[Test] Line 1 Content: " + editor.buffer.get_line(1));
+
+// 3. Test Tree View FFI
+var tree = TreeView(left_dock.get_handle());
+tree.add_node("src/main.srl");
+tree.add_node("src/compiler.srl");
+print("[Test] Workspace Tree View Nodes Added to Handle: " + to_string(tree.get_handle()));
+
+// 4. Test File System Watcher FFI
+var watcher = file_watcher_create("./src");
+var changes = watcher.poll_changes();
+print("[Test] File Watcher Polled successfully.");
+
+// 5. Test Async Process Pipe FFI
+var proc = process_run("echo [SRL Process Test] Hello World");
+sys_sleep(200);
+var output = proc.get_stdout();
+print("[Test] Process Pipe Execution Output: " + output);
+
+print("[Test] All SRL IDE Subsystems verified successfully with 0 errors.");

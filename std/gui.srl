@@ -1,0 +1,74 @@
+// std/gui.srl - Object-Oriented SRL GUI & Windowing Abstraction Module
+
+class Window {
+    fn init(title, width, height) {
+        this.title = title;
+        this.width = width;
+        this.height = height;
+        this.handle = gui_window_create(title, width, height);
+    }
+
+    fn show() {
+        if (this.handle != nil) {
+            return gui_window_show(this.handle);
+        }
+        return false;
+    }
+
+    fn get_handle() {
+        return this.handle;
+    }
+}
+
+class Splitter {
+    fn init(orientation) {
+        this.orientation = orientation;
+        this.handle = gui_splitter_create(orientation);
+    }
+
+    fn get_handle() {
+        return this.handle;
+    }
+}
+
+class DockPanel {
+    fn init(area, title) {
+        this.area = area;
+        this.title = title;
+        this.handle = gui_dock_panel_create(area, title);
+    }
+
+    fn get_handle() {
+        return this.handle;
+    }
+}
+
+class TreeView {
+    fn init(parent_handle) {
+        this.parent_handle = parent_handle;
+        this.handle = gui_tree_view_create(parent_handle);
+    }
+
+    fn add_node(node_path) {
+        if (this.handle != nil) {
+            return gui_tree_view_add_node(this.handle, node_path);
+        }
+        return false;
+    }
+
+    fn get_handle() {
+        return this.handle;
+    }
+}
+
+fn gui_create_window(title, width, height) {
+    return Window(title, width, height);
+}
+
+fn gui_create_splitter(orientation) {
+    return Splitter(orientation);
+}
+
+fn gui_create_dock(area, title) {
+    return DockPanel(area, title);
+}

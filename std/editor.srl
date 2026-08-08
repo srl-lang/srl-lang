@@ -1,0 +1,110 @@
+// std/editor.srl - Pure SRL Text Editor Engine, Text Buffer & Cursor Management
+
+class Cursor {
+    fn init(line, column) {
+        this.line = line;
+        this.column = column;
+    }
+
+    fn move_to(line, column) {
+        this.line = line;
+        this.column = column;
+    }
+}
+
+class TextBuffer {
+    fn init() {
+        this.lines = arr_new();
+        arr_push(this.lines, "");
+        this.undo_stack = arr_new();
+        this.redo_stack = arr_new();
+    }
+
+    fn load_content(content) {
+        this.lines = arr_new();
+        var current_line = "";
+        var i = 0;
+        var len = str_len(content);
+        while (i < len) {
+            var ch = str_sub(content, i, 1);
+            if (ch == "\n") {
+                arr_push(this.lines, current_line);
+                current_line = "";
+            } else if (ch != "\r") {
+                current_line = current_line + ch;
+            }
+            i = i + 1;
+        }
+        arr_push(this.lines, current_line);
+    }
+
+    fn get_line_count() {
+        return arr_len(this.lines);
+    }
+
+    fn get_line(index) {
+        if (index >= 0 && index < arr_len(this.lines)) {
+            return arr_get(this.lines, index);
+        }
+        return "";
+    }
+
+    fn set_line(index, text) {
+        if (index >= 0 && index < arr_len(this.lines)) {
+            arr_set(this.lines, index, text);
+            return true;
+        }
+        return false;
+    }
+
+    fn insert_line(index, text) {
+        if (index >= 0 && index <= arr_len(this.lines)) {
+            arr_push(this.lines, text); // append
+            return true;
+        }
+        return false;
+    }
+
+    fn get_full_text() {
+        var result = "";
+        var count = arr_len(this.lines);
+        var idx = 0;
+        while (idx < count) {
+            result = result + arr_get(this.lines, idx);
+            if (idx < count - 1) {
+                result = result + "\n";
+            }
+            idx = idx + 1;
+        }
+        return result;
+    }
+}
+
+class EditorEngine {
+    fn init(parent_id) {
+        this.handle = gui_editor_create(parent_id);
+        this.buffer = TextBuffer();
+        this.cursor = Cursor(0, 0);
+    }
+
+    fn set_text(text) {
+        this.buffer.load_content(text);
+        if (this.handle != nil) {
+            gui_editor_set_text(this.handle, text);
+        }
+    }
+
+    fn get_text() {
+        return this.buffer.get_full_text();
+    }
+
+    fn set_font(font_name, font_size) {
+        if (this.handle != nil) {
+            gui_editor_set_font(this.handle, font_name, font_size);
+        }
+    }
+}
+
+fn editor_create(parent_id) {
+    return EditorEngine(parent_id);
+}

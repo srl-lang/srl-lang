@@ -8,7 +8,7 @@ import("std/env.srl");
 
 print("========================================================");
 print(" SRL Self-Hosted Native Compiler (srlc)");
-print(" Version 0.3.2 (Self-Hosting Engine)");
+print(" Version 0.3.3 (Self-Hosting Engine)");
 print("========================================================");
 
 fn uint64_to_bytes(n) {

@@ -1,6 +1,6 @@
 # SRL (Serial Run Language) - Comprehensive Language Specification & Architecture Manual
 
-**Version:** `v0.3.2`  
+**Version:** `v0.3.3`  
 **Architecture:** High-Performance Bytecode Virtual Machine (VM), 100% Self-Hosted Compiler (`srlc`), & LLVM IR Standalone Compiler  
 **License:** GNU General Public License v3.0 (GPLv3)
 
@@ -338,4 +338,4 @@ import_native("plugins/my_plugin.dll", "my_plugin");
 
 ---
 
-*SRL (Serial Run Language) v0.3.2 - GNU General Public License v3.0*
+*SRL (Serial Run Language) v0.3.3 - GNU General Public License v3.0*

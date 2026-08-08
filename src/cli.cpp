@@ -65,7 +65,7 @@ void Term::warn(const std::string& header, const std::string& message) {
 
 void printVersion() {
     Term::enableAnsi();
-    std::cout << Term::bold("SRL Language Compiler Toolchain") << " v0.3.2\n";
+    std::cout << Term::bold("SRL Language Compiler Toolchain") << " v0.3.3\n";
     std::cout << "Target: x86_64-pc-windows-msvc (Bytecode VM & AOT JIT Engine)\n";
 }
 

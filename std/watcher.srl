@@ -1,0 +1,19 @@
+// std/watcher.srl - File System Watcher & Live File Tracking for SRL IDE Workspace
+
+class FileWatcher {
+    fn init(path) {
+        this.watch_path = path;
+        this.handle = gui_file_watcher_create(path);
+    }
+
+    fn poll_changes() {
+        if (this.handle != nil) {
+            return gui_file_watcher_poll(this.handle);
+        }
+        return arr_new();
+    }
+}
+
+fn file_watcher_create(path) {
+    return FileWatcher(path);
+}

@@ -83,7 +83,7 @@ void NET::registerNativeFunctions(VM& vm) {
             }
             freeaddrinfo(res);
 
-            std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: SRL-Lang/0.3.2\r\nConnection: close\r\n\r\n";
+            std::string req = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nUser-Agent: SRL-Lang/0.3.3\r\nConnection: close\r\n\r\n";
             send(s, req.c_str(), (int)req.length(), 0);
 
             std::string response;

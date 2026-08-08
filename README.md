@@ -4,7 +4,7 @@
 
 Featuring a clean syntax, a fast bytecode virtual machine, and a 100% self-hosted native compiler written in SRL (`compiler/srlc.srl`), SRL combines developer agility with low-level execution speed.
 
-> **Current Version:** `v0.3.2`
+> **Current Version:** `v0.3.3`
 
 ---
 
@@ -117,6 +117,10 @@ print("Current Process ID: " + to_string(sys_pid()));
 ---
 
 ## Changelog
+
+### Release v0.3.3
+- **Native SRL IDE FFI Bridge & Modules** - Added native GUI windowing, resizable splitters, dock panels, editor buffer handle management, workspace tree views, async process execution pipes, and file system modification watchers (`srl_gui.cpp`, `std/gui.srl`, `std/editor.srl`, `std/process.srl`, `std/watcher.srl`).
+- **Comprehensive IDE Subsystems Architecture** - Support for building production-grade IDEs written entirely in Serial Run Language.
 
 ### Release v0.3.2
 - **100% Self-Hosted Compiler Parity** — `compiler/srlc.srl` and `compiler/codegen_llvm.srl` completely bootstrapped for native executable generation.

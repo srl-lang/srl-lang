@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# SRL Toolchain v0.3.2 Automated Installer for Linux & macOS
+# SRL Toolchain v0.3.3 Automated Installer for Linux & macOS
 set -e
 
 echo "========================================================"
-echo "  SRL (Serial Run Language) v0.3.2 POSIX Installer"
+echo "  SRL (Serial Run Language) v0.3.3 POSIX Installer"
 echo "========================================================"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -66,5 +66,5 @@ export PATH="$BIN_DIR:$PATH"
 "$BIN_DIR/srl" version
 
 echo "========================================================"
-echo "  SRL v0.3.2 Installed Successfully to $INSTALL_DIR"
+echo "  SRL v0.3.3 Installed Successfully to $INSTALL_DIR"
 echo "========================================================"
